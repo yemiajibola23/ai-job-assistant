@@ -1,0 +1,19 @@
+# Virtual environment
+venv/
+
+# API keys
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data files
+*.db
+data/
+
+# Jupyter notebooks (if any)
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
