@@ -1,5 +1,6 @@
 import fitz
 import re
+import json
 
 COMMON_SKILLS = [
     "python", "java", "swift", "javascript", "react", "node.js", "sql", "swiftui",
@@ -50,3 +51,6 @@ def parse_resume_text(text: str) -> dict:
 def extract_skills_from_text(text: str, skills=COMMON_SKILLS) -> list[str]:
     return [skill for skill in skills if skill.lower() in text.lower()]
 
+def save_parsed_resume_to_json(parsed_data: dict, output_path: str):
+    with open(output_path, 'w', encoding="utf-8") as f:
+        json.dump(parsed_data, f, indent=2)
