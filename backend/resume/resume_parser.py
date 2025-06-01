@@ -13,6 +13,16 @@ def extract_text_from_pdf(pdf_path):
 def parse_resume_text(text: str) -> dict:
     parsed = {}
 
+    # Extract name
+    lines = text.splitlines()
+    name = None
+    for line in lines:
+        line.strip()
+        if (line and not re.search(r"email|phone|linkedin|github|@|\d", line, re.I) and len(line.split()) <= 4):
+            name = line
+            break
+    parsed["name"] = name
+
     # Extract email using regex
     email_match = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text)
     parsed["email"] = email_match.group(0) if email_match else None
