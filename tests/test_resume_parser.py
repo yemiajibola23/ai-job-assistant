@@ -14,3 +14,12 @@ def test_parse_resume_text_extracts_fields():
     # Optional: precise name test
     expected_name = "Yemi Ajibola"  # replace with actual name in your PDF
     assert result["name"].lower() == expected_name.lower(), f"Expected name '{expected_name}' but got '{result['name']}'"
+
+def test_parse_resume_text_extracts_skills():
+    sample_path = os.path.join(os.path.dirname(__file__), "data", "yemi_resume.pdf")
+    text = extract_text_from_pdf(sample_path)
+    result = parse_resume_text(text)
+
+    assert "swift" in result["skills"]
+    assert "swiftui" in result["skills"]
+    assert "kubernetes" not in result["skills"]
