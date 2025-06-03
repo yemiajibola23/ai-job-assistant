@@ -1,4 +1,4 @@
-    📅 AI Job Assistant Curriculum (Day-by-Day Roadmap)
+📅 AI Job Assistant Curriculum (Day-by-Day Roadmap)
 
     This document tracks the daily breakdown of tasks, goals, and deliverables for the AI Job Application Assistant project. Modeled after the Full Stack NBA curriculum.
 
@@ -56,3 +56,6 @@
 
     🔁 Ongoing Daily Workflow
 
+🛠️ Note:
+- Plan a general tracker refactor checkpoint before the polish phase on Day 10
+- Include VSCode terminal fixes in ongoing tech debt review
