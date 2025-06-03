@@ -1,10 +1,12 @@
 import sqlite3
 from datetime import datetime
 
-def get_connection():
-    return sqlite3.connect('applications.db')
+DEFAULT_DB_PATH = "applications.db"
 
-def create_table(db_path):
+def get_connection():
+    return sqlite3.connect(DEFAULT_DB_PATH)
+
+def create_table():
     conn = get_connection()
     cursor = conn.cursor()
 

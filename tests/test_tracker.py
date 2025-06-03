@@ -1,10 +1,18 @@
 import sqlite3
-from backend.db.tracker import create_table, add_application, get_all_applications
+import os
+from backend.db.tracker import create_table, add_application, get_all_applications, get_applications_by_status
+from backend.db import tracker
+
+TEST_DB_PATH = "test-application.db"
+tracker.DEFAULT_DB_PATH = TEST_DB_PATH
+
+if os.path.exists(TEST_DB_PATH):
+    os.remove(TEST_DB_PATH)
 
 def test_create_table_structure():
-    create_table("test-application.db")
+    create_table()
 
-    conn = sqlite3.connect('test-application.db')
+    conn = sqlite3.connect(TEST_DB_PATH)
     cursor = conn.cursor()
 
     sql = "PRAGMA table_info(applications)"
@@ -47,7 +55,7 @@ def test_add_application_inserts_data():
     app_id = add_application(data)
     assert isinstance(app_id, int) and app_id > 0
 
-    conn = sqlite3.connect('applications.db')
+    conn = sqlite3.connect(TEST_DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM applications WHERE id = ?", (app_id,))
     
@@ -106,3 +114,9 @@ def test_get_all_applications_by_status_filters_correctly():
     
     interviewing_id = add_application(interviewing_job)
     applied_id = add_application(applied_job)
+
+    res_application = get_applications_by_status("Applied")
+
+    assert isinstance(res_application, list)
+    assert len(res_application) == 1
+    assert res_application[0]["job_title"] == "Senior iOS Engineer"
