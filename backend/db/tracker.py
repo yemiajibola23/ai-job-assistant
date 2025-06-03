@@ -5,7 +5,7 @@ def get_connection():
     return sqlite3.connect('applications.db')
 
 def create_table(db_path):
-    conn = sqlite3.connect(db_path)
+    conn = get_connection()
     cursor = conn.cursor()
 
     applications_sql = """
@@ -28,3 +28,34 @@ def create_table(db_path):
     cursor.execute(applications_sql)
     conn.commit()
     conn.close()
+
+def add_application(data: dict):
+    conn = get_connection()
+    current_time = datetime.now().isoformat()
+
+    fields = [
+        "job_title",
+        "company_name",
+        "location",
+        "job_url",
+        "match_score",
+        "resume_used",
+        "cover_letter_used",
+        "status",
+        "notes",
+        "created_at",
+        "updated_at"
+    ]
+
+    values = [data.get(field) for field in fields[:-2]] + [current_time, current_time]
+    placeholders = ", ".join(["?"] * len(fields))
+
+    sql = f"INSERT INTO applications({','.join(fields)}) VALUES({placeholders})"
+    
+    cursor = conn.cursor()
+    cursor.execute(sql, values)
+    conn.commit()
+    last_row_id = cursor.lastrowid
+    conn.close()
+
+    return last_row_id
