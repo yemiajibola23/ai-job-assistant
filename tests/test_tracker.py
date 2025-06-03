@@ -2,12 +2,34 @@ import sqlite3
 import os
 from backend.db.tracker import create_table, add_application, get_all_applications, get_applications_by_status
 from backend.db import tracker
+from backend.enums.application_status import ApplicationStatus
+import pytest
 
 TEST_DB_PATH = "test-application.db"
 tracker.DEFAULT_DB_PATH = TEST_DB_PATH
 
-if os.path.exists(TEST_DB_PATH):
-    os.remove(TEST_DB_PATH)
+def reset_test_db():    
+    if os.path.exists(TEST_DB_PATH):
+        os.remove(TEST_DB_PATH)
+    create_table()
+
+
+@pytest.fixture(autouse=True)
+def reset_db_before_each_test():
+    reset_test_db()
+
+def get_test_application(status=ApplicationStatus.APPLIED, job_title="Senior iOS Engineer"):
+    return {
+        "job_title": job_title, 
+        "company_name": "Flock Safety", 
+        "location": "Remote", 
+        "job_url": "https://www.flocksafety.com/careers?ashby_jid=7810dce1-c1bf-4f28-b5d9-800c5a7e1289#ashby_embed", 
+        "match_score":0.7, 
+        "resume_used": "yemi_ajibola.pdf", 
+        "cover_letter_used": "yemi_ajibola_cover_letter.pdf", 
+        "status": status, 
+        "notes":""
+    }
 
 def test_create_table_structure():
     create_table()
@@ -41,17 +63,7 @@ def test_create_table_structure():
     conn.close()
 
 def test_add_application_inserts_data():
-    data = {
-        "job_title": "Senior iOS Engineer", 
-            "company_name": "Flock Safety", 
-            "location": "Remote", 
-            "job_url": "https://www.flocksafety.com/careers?ashby_jid=7810dce1-c1bf-4f28-b5d9-800c5a7e1289#ashby_embed", 
-            "match_score":0.7, 
-            "resume_used": "yemi_ajibola.pdf", 
-            "cover_letter_used": "yemi_ajibola_cover_letter.pdf", 
-            "status": "Interviewing", 
-            "notes":""
-            }
+    data = get_test_application(status=ApplicationStatus.INTERVIEW)
     app_id = add_application(data)
     assert isinstance(app_id, int) and app_id > 0
 
@@ -64,17 +76,7 @@ def test_add_application_inserts_data():
     conn.close()
 
 def test_get_all_applications_returns_data():
-    data = {
-        "job_title": "Senior iOS Engineer", 
-            "company_name": "Flock Safety", 
-            "location": "Remote", 
-            "job_url": "https://www.flocksafety.com/careers?ashby_jid=7810dce1-c1bf-4f28-b5d9-800c5a7e1289#ashby_embed", 
-            "match_score":0.7, 
-            "resume_used": "yemi_ajibola.pdf", 
-            "cover_letter_used": "yemi_ajibola_cover_letter.pdf", 
-            "status": "Interviewing", 
-            "notes":""
-            }
+    data = get_test_application(status=ApplicationStatus.INTERVIEW)
     
     app_id = add_application(data)
 
@@ -88,34 +90,14 @@ def test_get_all_applications_returns_data():
 
 def test_get_all_applications_by_status_filters_correctly():
     # Should return only applications with matching status
-    applied_job = {
-        "job_title": "Senior iOS Engineer", 
-        "company_name": "Flock Safety", 
-        "location": "Remote", 
-        "job_url": "https://www.flocksafety.com/careers?ashby_jid=7810dce1-c1bf-4f28-b5d9-800c5a7e1289#ashby_embed", 
-        "match_score":0.7, 
-        "resume_used": "yemi_ajibola.pdf", 
-        "cover_letter_used": "yemi_ajibola_cover_letter.pdf", 
-        "status": "Applied", 
-        "notes":""
-    }
+    applied_job = get_test_application()
 
-    interviewing_job = {
-        "job_title": "Machine Learning Engineer", 
-        "company_name": "Flock Safety", 
-        "location": "Remote", 
-        "job_url": "https://www.flocksafety.com/careers?ashby_jid=7810dce1-c1bf-4f28-b5d9-800c5a7e1289#ashby_embed", 
-        "match_score":0.7, 
-        "resume_used": "yemi_ajibola.pdf", 
-        "cover_letter_used": "yemi_ajibola_cover_letter.pdf", 
-        "status": "Interviewing", 
-        "notes":""
-     }
+    interviewing_job = get_test_application(ApplicationStatus.INTERVIEW, "Machine Learning Engineer")
     
     interviewing_id = add_application(interviewing_job)
     applied_id = add_application(applied_job)
 
-    res_application = get_applications_by_status("Applied")
+    res_application = get_applications_by_status(ApplicationStatus.APPLIED)
 
     assert isinstance(res_application, list)
     assert len(res_application) == 1

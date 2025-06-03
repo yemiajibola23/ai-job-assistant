@@ -1,5 +1,8 @@
 import sqlite3
 from datetime import datetime
+from backend.enums.application_status import ApplicationStatus
+from typing import Union
+
 
 DEFAULT_DB_PATH = "applications.db"
 
@@ -27,7 +30,7 @@ def create_table():
         match_score REAL,
         resume_used TEXT,
         cover_letter_used TEXT,
-        status TEXT DEFAULT 'Interested',
+        status TEXT DEFAULT 'Applied',
         notes TEXT,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT
@@ -38,9 +41,22 @@ def create_table():
     conn.commit()
     conn.close()
 
-def add_application(data: dict):
+def add_application(data: dict[str, Union[str, float, ApplicationStatus]]) -> int:
     conn = get_connection()
     current_time = datetime.now().isoformat()
+
+    raw_status = data.get("status")
+    if isinstance(raw_status, str):
+        try:
+            status = ApplicationStatus.from_value(raw_status)
+        except ValueError:
+            raise ValueError(f"Invalid application status: {raw_status}")
+    elif isinstance(raw_status, ApplicationStatus):
+        status = raw_status
+    else:
+        raise TypeError("status must be a string or ApplicationStatus enum")
+
+    data["status"] = status.value  # Normalize
 
     fields = [
         "job_title",
@@ -69,19 +85,19 @@ def add_application(data: dict):
 
     return last_row_id
 
-def get_all_applications() -> list[dict]:
+def get_all_applications() -> list[dict[str, Union[str, float]]]:
     conn, cursor = get_dict_cursor()
-    
+
     cursor.execute('SELECT * FROM applications')
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
     
     return rows
 
-def get_applications_by_status(status: str) -> list[dict]:
+def get_applications_by_status(status: ApplicationStatus) -> list[dict[str, Union[str, float]]]:
     conn, cursor = get_dict_cursor()
 
-    cursor.execute('SELECT * FROM applications WHERE status = ?', (status, ))
+    cursor.execute('SELECT * FROM applications WHERE status = ?', (status.value, ))
 
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()

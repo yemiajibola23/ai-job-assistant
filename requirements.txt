@@ -5,3 +5,4 @@ streamlit
 pymupdf
 sentence-transformers
 torch==2.0.1
+pytest>=8.0
