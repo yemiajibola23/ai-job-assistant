@@ -77,3 +77,32 @@ def test_get_all_applications_returns_data():
 
     # Optional: delete test data to avoid build-up
     # delete_application(app_id)
+
+def test_get_all_applications_by_status_filters_correctly():
+    # Should return only applications with matching status
+    applied_job = {
+        "job_title": "Senior iOS Engineer", 
+        "company_name": "Flock Safety", 
+        "location": "Remote", 
+        "job_url": "https://www.flocksafety.com/careers?ashby_jid=7810dce1-c1bf-4f28-b5d9-800c5a7e1289#ashby_embed", 
+        "match_score":0.7, 
+        "resume_used": "yemi_ajibola.pdf", 
+        "cover_letter_used": "yemi_ajibola_cover_letter.pdf", 
+        "status": "Applied", 
+        "notes":""
+    }
+
+    interviewing_job = {
+        "job_title": "Machine Learning Engineer", 
+        "company_name": "Flock Safety", 
+        "location": "Remote", 
+        "job_url": "https://www.flocksafety.com/careers?ashby_jid=7810dce1-c1bf-4f28-b5d9-800c5a7e1289#ashby_embed", 
+        "match_score":0.7, 
+        "resume_used": "yemi_ajibola.pdf", 
+        "cover_letter_used": "yemi_ajibola_cover_letter.pdf", 
+        "status": "Interviewing", 
+        "notes":""
+     }
+    
+    interviewing_id = add_application(interviewing_job)
+    applied_id = add_application(applied_job)

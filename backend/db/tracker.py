@@ -70,3 +70,15 @@ def get_all_applications() -> list[dict]:
     conn.close()
     
     return rows
+
+def get_applications_by_status(status: str) -> list[dict]:
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM applications WHERE status = ?', (status, ))
+
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    return rows
