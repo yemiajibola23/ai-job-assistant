@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from backend.db.tracker import create_table, add_application, get_all_applications, get_applications_by_status
+from backend.db.tracker import create_table, add_application, get_all_applications, get_applications_by_status, delete_application
 from backend.db import tracker
 from backend.enums.application_status import ApplicationStatus
 import pytest
@@ -102,3 +102,12 @@ def test_get_all_applications_by_status_filters_correctly():
     assert isinstance(res_application, list)
     assert len(res_application) == 1
     assert res_application[0]["job_title"] == "Senior iOS Engineer"
+
+def test_delete_application_deletes_correct_application():
+    applied_job = get_test_application()
+    id = add_application(applied_job)
+
+    delete_application(id)
+
+    apps = get_all_applications()
+    assert all(app['id'] != id for app in apps)  

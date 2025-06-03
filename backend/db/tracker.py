@@ -103,3 +103,14 @@ def get_applications_by_status(status: ApplicationStatus) -> list[dict[str, Unio
     conn.close()
 
     return rows
+
+def delete_application(application_id: int) -> bool:
+    conn, cursor = get_dict_cursor()
+
+    cursor.execute('DELETE FROM applications WHERE id = ?', (application_id,))
+    deleted = cursor.rowcount > 0
+
+    conn.commit()
+    conn.close()
+
+    return deleted
