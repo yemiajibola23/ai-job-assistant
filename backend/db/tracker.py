@@ -59,3 +59,14 @@ def add_application(data: dict):
     conn.close()
 
     return last_row_id
+
+def get_all_applications() -> list[dict]:
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM applications')
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return rows
