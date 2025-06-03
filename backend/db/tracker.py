@@ -6,6 +6,13 @@ DEFAULT_DB_PATH = "applications.db"
 def get_connection():
     return sqlite3.connect(DEFAULT_DB_PATH)
 
+def get_dict_cursor():
+    conn =  get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    return conn, cursor
+
 def create_table():
     conn = get_connection()
     cursor = conn.cursor()
@@ -63,10 +70,8 @@ def add_application(data: dict):
     return last_row_id
 
 def get_all_applications() -> list[dict]:
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
+    conn, cursor = get_dict_cursor()
+    
     cursor.execute('SELECT * FROM applications')
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
@@ -74,9 +79,7 @@ def get_all_applications() -> list[dict]:
     return rows
 
 def get_applications_by_status(status: str) -> list[dict]:
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    conn, cursor = get_dict_cursor()
 
     cursor.execute('SELECT * FROM applications WHERE status = ?', (status, ))
 
