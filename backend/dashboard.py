@@ -1,7 +1,6 @@
 import sqlite3
 from backend.enums.application_status import ApplicationStatus
 
-
 def get_application_count(db: sqlite3.Connection) -> int:
     cursor = db.cursor()
     cursor.execute('SELECT COUNT(*) FROM applications')
@@ -19,7 +18,6 @@ def get_application_count_grouped_by_status(db:  sqlite3.Connection) -> dict:
         }
 
 def get_all_applications_ordered_by_date_created(db: sqlite3.Connection):
-    db.row_factory = sqlite3.Row
     cursor = db.cursor()
     cursor.execute('SELECT job_title, company_name, status, created_at FROM applications ORDER BY created_at DESC')
 

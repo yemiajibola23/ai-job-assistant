@@ -4,9 +4,10 @@ from backend.db.tracker import create_table, add_application, get_all_applicatio
 from backend.db import tracker
 from backend.enums.application_status import ApplicationStatus
 import pytest
+from backend.db import app_db
 
 TEST_DB_PATH = "test-application.db"
-tracker.DEFAULT_DB_PATH = TEST_DB_PATH
+app_db.DEFAULT_DB_PATH = TEST_DB_PATH
 
 def reset_test_db():    
     if os.path.exists(TEST_DB_PATH):

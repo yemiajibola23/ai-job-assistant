@@ -2,19 +2,7 @@ import sqlite3
 from datetime import datetime
 from backend.enums.application_status import ApplicationStatus
 from typing import Union, Optional
-
-
-DEFAULT_DB_PATH = "applications.db"
-
-def get_connection():
-    return sqlite3.connect(DEFAULT_DB_PATH)
-
-def get_dict_cursor():
-    conn =  get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    return conn, cursor
+from backend.db.app_db import get_connection, get_dict_cursor
 
 def create_table(conn: Optional[sqlite3.Connection] = None):
     should_close = False
@@ -38,7 +26,7 @@ def create_table(conn: Optional[sqlite3.Connection] = None):
         status TEXT DEFAULT 'Applied',
         notes TEXT,
         created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT
+        updated_at TEXT DEFAULT (datetime('now'))
     )
     """
 
