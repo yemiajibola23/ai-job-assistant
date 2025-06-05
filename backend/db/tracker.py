@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 from backend.enums.application_status import ApplicationStatus
-from typing import Union
+from typing import Union, Optional
 
 
 DEFAULT_DB_PATH = "applications.db"
@@ -16,8 +16,13 @@ def get_dict_cursor():
 
     return conn, cursor
 
-def create_table():
-    conn = get_connection()
+def create_table(conn: Optional[sqlite3.Connection] = None):
+    should_close = False
+
+    if conn is None:
+        conn = get_connection()
+        should_close = True
+
     cursor = conn.cursor()
 
     applications_sql = """
@@ -39,7 +44,9 @@ def create_table():
 
     cursor.execute(applications_sql)
     conn.commit()
-    conn.close()
+
+    if should_close:
+        conn.close()
 
 def add_application(data: dict[str, Union[str, float, ApplicationStatus]]) -> int:
     conn = get_connection()
@@ -81,6 +88,8 @@ def add_application(data: dict[str, Union[str, float, ApplicationStatus]]) -> in
     cursor.execute(sql, values)
     conn.commit()
     last_row_id = cursor.lastrowid
+    if last_row_id is None:
+        raise ValueError("Failed to insert application, no row ID returned.")
     conn.close()
 
     return last_row_id

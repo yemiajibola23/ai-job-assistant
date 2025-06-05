@@ -2,5 +2,6 @@
   "python.linting.enabled": true,
   "python.linting.pylintEnabled": true,
   "python.linting.flake8Enabled": false,
-  "python.linting.ruffEnabled": false
+  "python.linting.ruffEnabled": false,
+  "python.defaultInterpreterPath": ".venv/bin/python"
 }
