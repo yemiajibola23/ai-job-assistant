@@ -39,7 +39,7 @@ def test_get_dashboard_data_returns_summary(test_db):
     result = get_dashboard_data(test_db)
     
     assert result["total_count"] == 3
-    assert result["status_count"] == { "Applied" : 2, "Interviewing": 1 }
+    assert result["status_count"] == { ApplicationStatus.APPLIED : 2, ApplicationStatus.INTERVIEW: 1 }
     assert result["recent_apps"][0]["company_name"] == "Google"
     assert result["recent_apps"][-1]["company_name"] == "Apple"
 

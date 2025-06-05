@@ -11,8 +11,8 @@ class ApplicationStatus(Enum):
     
 
     @classmethod
-    def from_value(cls, value: str) -> "ApplicatonStatus":
+    def from_value(cls, value: str) -> "ApplicationStatus":
         for member in cls:
             if member.value.lower() == value.lower():
                 return member
-            raise ValueError(f"Invalid application status: {value}")
+        raise ValueError(f"Invalid application status: {value}")
