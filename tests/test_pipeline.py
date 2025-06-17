@@ -2,7 +2,7 @@ import os
 import sqlite3
 import numpy as np
 from backend.matcher.filtering import filter_jobs
-from backend.db.db import init_db, save_jobs_to_db
+from backend.db.jobs_db import init_db, save_jobs_to_db
 
 DB_PATH = "test_jobs.db"
 

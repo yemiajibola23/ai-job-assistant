@@ -1,6 +1,7 @@
 import sqlite3
+from pathlib import Path
 
-DEFAULT_DB_PATH = "applications.db"
+DEFAULT_DB_PATH = Path(__file__).parent / "applications.db"
 
 def get_connection():
     return sqlite3.connect(DEFAULT_DB_PATH)

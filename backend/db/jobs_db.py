@@ -1,5 +1,9 @@
 import sqlite3
-from typing import List, Dict
+from typing import List, Dict, Any
+from pathlib import Path
+
+DB_PATH = Path(__file__).parent / "jobs.db"
+
 def init_db(db_path: str = "jobs.db"):
     """
     Initializes the job database and creates the jobs table if it doesn't exist.
@@ -25,7 +29,7 @@ def init_db(db_path: str = "jobs.db"):
     conn.commit()
     conn.close()
 
-def save_jobs_to_db(jobs: List[Dict], db_path: str = "jobs.db"):
+def save_jobs_to_db(jobs: List[Dict[str, Any]], db_path: Path = DB_PATH):
     """
     Saves a list of job dicts into the SQLite database.
 
