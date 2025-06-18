@@ -1,5 +1,5 @@
 import pytest
-from backend.generator.services.generate_tailored_resume import generate_tailored_summary
+from backend.generator.services.generate_tailored_resume import generate_tailored_summary, generate_tailored_bullets
 
 def test_generate_tailored_summary_returns_rewritten_text():
     # Arrange
@@ -22,3 +22,27 @@ def test_generate_tailored_summary_returns_rewritten_text():
     assert isinstance(result, str)
     assert result != base_summary
     assert "Swift" in result
+
+
+def test_generate_tailored_bullets_returns_aligned_bullets():
+    # Arrange
+    bullets = [
+        "Developed scalable APIs for internal services.",
+        "Led weekly code reviews and mentored junior engineers.",
+        "Collaborated with frontend team on React integration."
+    ]
+
+    job_description = (
+        "We're hiring a backend engineer with experience in building RESTful APIs, "
+        "working with async Python, and deploying services with Docker. "
+        "Familiarity with mentoring and team leadership is a plus."
+    )
+
+    # Act
+    result = generate_tailored_bullets(bullets, job_description)
+
+    # Assert
+    assert isinstance(result, list)
+    assert len(result) > 0
+    assert all(isinstance(b, str) for b in result)
+    assert any("API" in b or "Docker" in b or "Python" in b for b in result)

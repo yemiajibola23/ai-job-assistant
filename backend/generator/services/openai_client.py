@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_open_ai_response(prompt: str) -> str:
+def get_openai_response(prompt: str) -> str:
     api_key = os.getenv("OPENAI_API_KEY")
    
     if not api_key:
