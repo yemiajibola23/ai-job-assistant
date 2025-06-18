@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from backend.generator.generate_cover_letter import generate_cover_letter
+from backend.generator.services.generate_cover_letter import generate_cover_letter
 from backend.generator.cover_letter_saver import save_cover_letter
 load_dotenv()
 

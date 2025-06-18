@@ -1,5 +1,6 @@
+
 import pytest
-from backend.generator.services.generate_tailored_resume import generate_tailored_summary, generate_tailored_bullets
+from backend.generator.services.gpt_tailoring import generate_tailored_summary, generate_tailored_bullets
 
 def test_generate_tailored_summary_returns_rewritten_text():
     # Arrange
