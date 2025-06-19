@@ -1,8 +1,9 @@
 import sqlite3
 from datetime import datetime
-from backend.enums.application_status import ApplicationStatus
+from enums.application_status import ApplicationStatus
 from typing import Union, Optional
-from backend.db.app_db import get_connection, get_dict_cursor
+from app_db import get_connection, get_dict_cursor
+from schema import create_applications_table
 
 def create_table(conn: Optional[sqlite3.Connection] = None):
     should_close = False
@@ -12,25 +13,7 @@ def create_table(conn: Optional[sqlite3.Connection] = None):
         should_close = True
 
     cursor = conn.cursor()
-
-    applications_sql = """
-    CREATE TABLE IF NOT EXISTS applications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        job_title TEXT,
-        company_name TEXT,
-        location TEXT,
-        job_url TEXT,
-        match_score REAL,
-        resume_used TEXT,
-        cover_letter_used TEXT,
-        status TEXT DEFAULT 'Applied',
-        notes TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
-    )
-    """
-
-    cursor.execute(applications_sql)
+    cursor.execute(create_applications_table)
     conn.commit()
 
     if should_close:
@@ -111,3 +94,20 @@ def delete_application(application_id: int) -> bool:
     conn.close()
 
     return deleted
+
+def has_seen_job(job_id: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM seen_jobs WHERE job_id = ?", (job_id,))
+    result = cursor.fetchone()
+    conn.close()
+
+    return result is not None
+
+def mark_job_as_seen(job_id: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR IGNORE INTO seen_jobs (job_id) VALUES (?)", (job_id, ))
+    conn.commit()
+    conn.close()
+

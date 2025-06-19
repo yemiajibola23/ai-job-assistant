@@ -2,9 +2,13 @@
 
 import sqlite3
 from pathlib import Path
-from .schema import init_schema
+from schema import create_seen_jobs_table, create_applications_table
 
 DB_PATH = Path("applications.db")
+
+def init_schema(cursor):
+    cursor.execute(create_applications_table)
+    cursor.execute(create_seen_jobs_table)
 
 def run_migrations():
     print("📦 Running migrations...")
