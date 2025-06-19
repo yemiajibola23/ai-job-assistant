@@ -29,7 +29,9 @@ def generate_full_tailored_resume(job_id: str, resume_data: dict, job_descriptio
 ## Skills
 {skills_section}
 """
-    output_path = Path(f"tailored_resume_{job_id}.md")
+    output_dir = Path("output/resumes")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"tailored_resume_{job_id}.md"
     output_path.write_text(full_resume, encoding="utf-8")
 
     return str(output_path)

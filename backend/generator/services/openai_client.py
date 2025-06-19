@@ -22,7 +22,7 @@ def get_openai_response(prompt: str) -> str:
         temperature=0.7
     )
 
-    pprint.pprint(response.model_dump())
+    # pprint.pprint(response.model_dump())
 
     content = response.choices[0].message.content
     if not content:
