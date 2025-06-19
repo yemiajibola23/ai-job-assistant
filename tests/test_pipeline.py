@@ -3,9 +3,9 @@ import sqlite3
 import numpy as np
 from backend.matcher.filtering import filter_jobs
 from backend.db.jobs_db import init_db, save_jobs_to_db
+from pathlib import Path
 
-DB_PATH = "test_jobs.db"
-
+DB_PATH = Path(__file__).parent / "test_jobs.db"
 def setup_module(module):
     """Setup test DB and ensure clean state."""
     if os.path.exists(DB_PATH):

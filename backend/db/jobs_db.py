@@ -4,7 +4,7 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).parent / "jobs.db"
 
-def init_db(db_path: str = "jobs.db"):
+def init_db(db_path: Path):
     """
     Initializes the job database and creates the jobs table if it doesn't exist.
     """
@@ -61,5 +61,5 @@ def save_jobs_to_db(jobs: List[Dict[str, Any]], db_path: Path = DB_PATH):
     conn.close()
 
 if __name__ == "__main__":
-    init_db()
+    init_db(DB_PATH)
     print("✅ DB initialized and 'jobs' table ensured.")

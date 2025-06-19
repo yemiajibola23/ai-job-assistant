@@ -1,9 +1,9 @@
 import sqlite3
 from datetime import datetime
-from enums.application_status import ApplicationStatus
+from backend.enums.application_status import ApplicationStatus
 from typing import Union, Optional
-from app_db import get_connection, get_dict_cursor
-from schema import create_applications_table
+from backend.db.app_db import get_connection, get_dict_cursor
+from backend.db.schema import create_applications_table
 
 def create_table(conn: Optional[sqlite3.Connection] = None):
     should_close = False
