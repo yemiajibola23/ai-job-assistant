@@ -1,19 +1,30 @@
 import streamlit as st
 from app.ui_helpers import get_alert_status_message
 from backend.utils.scheduler import run_scheduler_job
+from backend.job_search.serpapi_fetcher import job_fetcher
+from backend.db.tracker import has_seen_job, mark_job_as_seen
+from backend.db.jobs_db import save_jobs_to_db
 
-if "seen_ids" not in st.session_state:
-    st.session_state.seen_ids = set()
+def streamlit_job_sync():
+    st.info("🔎 Querying SerpAPI...")
+    jobs = job_fetcher("iOS Engineer", "Remote", "remote", "Senior")
+    new_jobs = []
+    for job in jobs:
+        job_id = job["id"]
+        if not has_seen_job(job_id):
+            mark_job_as_seen(job_id)
+            new_jobs.append(job)
+    
+    save_jobs_to_db(new_jobs)
 
-def job_fetcher():
-    return [{"job_id": "2"}, {"job_id": "3"}]
+    if new_jobs:
+        st.success(f"✅ Added {len(new_jobs)} jobs to db.")
+    else:
+        st.info("No new jobs found.")
 
-def handler(new_jobs):
-    st.write(f"🆕 Found {len(new_jobs)} new job(s): {[job['job_id'] for job in new_jobs]}")
-    st.session_state.seen_ids.update(job["job_id"] for job in new_jobs)
 
-enabled = st.checkbox("Enable Alerts")
-st.write(get_alert_status_message(enabled))
+if __name__ == "__main__":
+    st.header("📄 Job Discovery")
 
-if enabled:
-    run_scheduler_job(job_fetcher, handler, st.session_state.seen_ids)
+    if st.button("🔁 Run Job Sync"):
+        streamlit_job_sync()
