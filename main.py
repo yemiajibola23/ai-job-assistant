@@ -29,16 +29,18 @@ def streamlit_job_sync():
     jobs = job_fetcher("iOS Engineer", "Remote", "remote", "Senior")
     new_jobs = []
     for job in jobs:
+        print(f"Listing job: {job['id']} – {job.get('title')}")
         job_id = job["id"]
         if not has_seen_job(job_id):
             mark_job_as_seen(job_id)
             new_jobs.append(job)
 
     matched_jobs = filter_and_match_jobs(new_jobs, resume_text)
+    print(matched_jobs)
     
     save_jobs_to_db(matched_jobs)
 
-    if new_jobs:
+    if matched_jobs:
         st.success(f"🧠 {len(matched_jobs)} matched jobs saved!")
     else:
         st.info("❌ No new jobs found.")

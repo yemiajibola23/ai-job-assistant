@@ -4,7 +4,7 @@ def filter_and_match_jobs(jobs: list[dict], resume_text: str, threshold: float =
     print(f"🪵 Found {len(jobs)} jobs")
     print(f"🪵 Descriptions extracted: {[job.get('description') for job in jobs]}")
 
-    print(f"🧾 Resume preview:\n{resume_text[:250]}")
+    #print(f"🧾 Resume preview:\n{resume_text[:250]}")
 
     descriptions = [job["description"] for job in jobs]
     ranked_scores = match_resume_to_jobs(resume_text, descriptions, 5)

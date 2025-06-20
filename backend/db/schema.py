@@ -24,3 +24,16 @@ CREATE TABLE IF NOT EXISTS seen_jobs (
     seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
+
+create_jobs_table = """
+CREATE TABLE IF NOT EXISTS jobs (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    company TEXT,
+    location TEXT,
+    url TEXT,
+    description TEXT, 
+    score REAL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""

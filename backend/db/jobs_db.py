@@ -1,7 +1,7 @@
 import sqlite3
 from typing import List, Dict, Any
 from pathlib import Path
-
+from backend.db.schema import create_jobs_table
 DB_PATH = Path(__file__).parent / "jobs.db"
 
 def init_db(db_path: Path):
@@ -11,21 +11,7 @@ def init_db(db_path: Path):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Write your CREATE TABLE statement here
-    create_table_sql = """
-    CREATE TABLE IF NOT EXISTS jobs (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        company TEXT,
-        location TEXT,
-        url TEXT,
-        description TEXT, 
-        score REAL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """
-
-    cursor.execute(create_table_sql)
+    cursor.execute(create_jobs_table)
     conn.commit()
     conn.close()
 
@@ -47,6 +33,7 @@ def save_jobs_to_db(jobs: List[Dict[str, Any]], db_path: Path = DB_PATH):
     """
 
     for job in jobs:
+        print(f"📝 Saving job: {job['id']} – {job.get('title')}")
         cursor.execute(insert_sql, (
             job["id"],
             job.get("title"),
@@ -58,6 +45,7 @@ def save_jobs_to_db(jobs: List[Dict[str, Any]], db_path: Path = DB_PATH):
         ))
 
     conn.commit()
+    print(f"✅ Committed {len(jobs)} jobs to DB")
     conn.close()
 
 if __name__ == "__main__":
