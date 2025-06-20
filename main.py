@@ -4,8 +4,27 @@ from backend.utils.scheduler import run_scheduler_job
 from backend.job_search.serpapi_fetcher import job_fetcher
 from backend.db.tracker import has_seen_job, mark_job_as_seen
 from backend.db.jobs_db import save_jobs_to_db
+from backend.matcher.pipeline import filter_and_match_jobs
+import fitz
+
+def extract_text_from_pdf(pdf_path: str) -> str:
+    doc = fitz.open(pdf_path)
+    text = ""
+    for page_number in range(len(doc)):
+        page = doc[page_number]
+        text += page.get_textpage().extractText()
+    return text
+
+def load_resume_text(path: str) -> str:
+    if path.endswith(".pdf"):
+        return extract_text_from_pdf(path)
+    
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
 def streamlit_job_sync():
+    resume_text = load_resume_text("tests/data/yemi_resume.pdf")
+
     st.info("🔎 Querying SerpAPI...")
     jobs = job_fetcher("iOS Engineer", "Remote", "remote", "Senior")
     new_jobs = []
@@ -14,13 +33,15 @@ def streamlit_job_sync():
         if not has_seen_job(job_id):
             mark_job_as_seen(job_id)
             new_jobs.append(job)
+
+    matched_jobs = filter_and_match_jobs(new_jobs, resume_text)
     
-    save_jobs_to_db(new_jobs)
+    save_jobs_to_db(matched_jobs)
 
     if new_jobs:
-        st.success(f"✅ Added {len(new_jobs)} jobs to db.")
+        st.success(f"🧠 {len(matched_jobs)} matched jobs saved!")
     else:
-        st.info("No new jobs found.")
+        st.info("❌ No new jobs found.")
 
 
 if __name__ == "__main__":

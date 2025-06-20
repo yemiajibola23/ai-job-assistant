@@ -2,8 +2,6 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-
-
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def match_resume_to_jobs(resume_text, job_descriptions, top_k=3):
@@ -18,6 +16,10 @@ def match_resume_to_jobs(resume_text, job_descriptions, top_k=3):
     Returns:
         List[Tuple[str, float]]: Top matching job descriptions and similarity scores.
     """
+     
+     if not job_descriptions:
+          return []
+
      # Create embeddings
      resume_embedding = model.encode(resume_text, convert_to_tensor=True)
      job_embeddings = model.encode(job_descriptions, convert_to_tensor=True)
