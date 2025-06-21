@@ -56,4 +56,11 @@ if st.button("🔁 Run Job Sync"):
 
 query = st.text_input("Enter job search query")
 if st.button("🔎 Search"):
-   st.json(parse_query(query))
+   result = parse_query(query)
+   st.json(result)
+
+   job_results = job_fetcher(result["job_title"], result["location"], result["work_type"], result["level"])
+
+   for job in job_results:
+       st.text(f"{job['title']} at {job['company']}")
+   
