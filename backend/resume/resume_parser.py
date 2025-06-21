@@ -9,7 +9,6 @@ COMMON_SKILLS = [
     "leadership", "teamwork", "problem solving", "agile", "scrum"
 ]
 
-
 def extract_text_from_pdf(pdf_path):
     doc = fitz.open(pdf_path)
     full_text = ""
@@ -54,3 +53,10 @@ def extract_skills_from_text(text: str, skills=COMMON_SKILLS) -> list[str]:
 def save_parsed_resume_to_json(parsed_data: dict, output_path: str):
     with open(output_path, 'w', encoding="utf-8") as f:
         json.dump(parsed_data, f, indent=2)
+
+def load_resume_text(path: str) -> str:
+    if path.endswith(".pdf"):
+        return extract_text_from_pdf(path)
+    
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()

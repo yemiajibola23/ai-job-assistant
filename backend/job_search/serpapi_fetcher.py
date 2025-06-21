@@ -35,7 +35,7 @@ def job_fetcher(job_title, location=None, work_type=None, level=None) -> list[di
             print("⚠️ Skipping job without job_id")
             continue
         
-        print(f"Looking at job from: {job.get('company_name')}")
+        # print(f"Looking at job from: {job.get('company_name')}")
         jobs.append({
             "id": job.get("job_id"),
             "title": job.get("title"),

@@ -4,7 +4,7 @@ import numpy as np
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-def match_resume_to_jobs(resume_text, job_descriptions, top_k=10):
+def match_resume_to_jobs(resume_text, job_descriptions, top_k=None):
      """
     Match resume text to job descriptions using semantic similarity.
 
@@ -16,7 +16,7 @@ def match_resume_to_jobs(resume_text, job_descriptions, top_k=10):
     Returns:
         List[Tuple[str, float]]: Top matching job descriptions and similarity scores.
     """
-     print(f"List of job_descriptions: {job_descriptions}")
+     # print(f"List of job_descriptions: {job_descriptions}")
      if not job_descriptions:
           print("⚠️ No job descriptions found!!!")
           return []
@@ -26,7 +26,7 @@ def match_resume_to_jobs(resume_text, job_descriptions, top_k=10):
      job_embeddings = model.encode(job_descriptions, convert_to_tensor=True)
 
      # Compute cosine similarity
-     print("Computing job scores...")
+     # print("Computing job scores...")
      scores = cosine_similarity(
           resume_embedding.cpu().reshape(1, -1),
           np.vstack([emb.cpu().numpy() for emb in job_embeddings])
@@ -38,5 +38,7 @@ def match_resume_to_jobs(resume_text, job_descriptions, top_k=10):
           key=lambda x: x[1],
           reverse=True
      )
-     
-     return ranked[:top_k]
+
+     if top_k:
+          return ranked[:top_k]
+     return ranked
