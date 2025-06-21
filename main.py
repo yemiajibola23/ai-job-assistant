@@ -5,6 +5,7 @@ from backend.job_search.serpapi_fetcher import job_fetcher
 from backend.matcher.pipeline import filter_and_match_jobs
 from backend.db.app_db import _init_db, clear_table, save_jobs_to_db, has_seen_job, mark_job_as_seen
 import fitz
+from backend.job_search.parse_query import parse_query
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     doc = fitz.open(pdf_path)
@@ -46,9 +47,13 @@ def streamlit_job_sync():
     else:
         st.info("❌ No new jobs found.")
 
-_init_db()
+# _init_db()
 # clear_table(table_name="seen_jobs")
 st.header("📄 Job Discovery")
 
 if st.button("🔁 Run Job Sync"):
     streamlit_job_sync()
+
+query = st.text_input("Enter job search query")
+if st.button("🔎 Search"):
+   st.json(parse_query(query))
