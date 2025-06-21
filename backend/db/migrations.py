@@ -2,12 +2,12 @@
 
 import sqlite3
 from pathlib import Path
-from schema import create_seen_jobs_table, create_applications_table
-
-DB_PATH = Path(__file__).parent / "applications.db"
+from backend.db.schema import create_applications_table, create_jobs_table, create_seen_jobs_table
+from backend.db.app_db import DB_PATH
 
 def init_schema(cursor):
     cursor.execute(create_applications_table)
+    cursor.execute(create_jobs_table)
     cursor.execute(create_seen_jobs_table)
 
 def run_migrations():

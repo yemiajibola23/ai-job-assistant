@@ -1,6 +1,6 @@
 import schedule
 import time
-from backend.db.tracker import has_seen_job, mark_job_as_seen
+from backend.db.app_db import has_seen_job, mark_job_as_seen
 
 def run_scheduler_job(job_fetcher, handler):
     current_jobs = job_fetcher()
