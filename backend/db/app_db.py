@@ -16,11 +16,12 @@ BASE_DIR = Path(__file__).parent
 DB_PATH  = BASE_DIR / "job_assistant.db"
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def get_dict_cursor():
     conn =  get_connection()
-    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     return conn, cursor
