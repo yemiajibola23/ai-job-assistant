@@ -1,11 +1,13 @@
 import os
 import sqlite3
 import numpy as np
-from backend.matcher.filtering import filter_jobs
-from backend.db.app_db import _init_db, save_jobs_to_db
+from backend.ranking.scoring import filter_jobs
+from backend.db.connection import _init_db
+from backend.db.job_dao import save_jobs_to_db
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent / "test_jobs.db"
+
 def setup_module(module):
     """Setup test DB and ensure clean state."""
     if os.path.exists(DB_PATH):
@@ -51,10 +53,10 @@ def test_filter_and_store_pipeline():
     assert top_jobs[0]["id"] == "job3"  # Highest match
 
     # Save to test DB
-    save_jobs_to_db(top_jobs, db_path=DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    save_jobs_to_db(conn, top_jobs)
 
     # Verify in DB
-    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT id, title, score FROM jobs")
     results = cursor.fetchall()

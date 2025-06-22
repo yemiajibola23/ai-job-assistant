@@ -2,6 +2,7 @@ from typing import List, Dict
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import torch
+from backend.ranking.embedder import embed_texts
 
 def filter_jobs(jobs: List[Dict], resume_embedding: np.ndarray, top_n: int = 5) -> List[Dict]:
     """
@@ -37,3 +38,44 @@ def filter_jobs(jobs: List[Dict], resume_embedding: np.ndarray, top_n: int = 5) 
         scored_jobs.append(job_with_score)
     
     return sorted(scored_jobs, key=lambda x: x["score"], reverse=True)[:top_n]
+
+
+
+def match_resume_to_jobs(resume_text, job_descriptions, top_k=None):
+     """
+    Match resume text to job descriptions using semantic similarity.
+
+    Args:
+        resume_text (str): Combined resume content.
+        job_descriptions (List[str]): A list of job description texts.
+        top_k (int): Number of top matches to return.
+
+    Returns:
+        List[Tuple[str, float]]: Top matching job descriptions and similarity scores.
+    """
+     # print(f"List of job_descriptions: {job_descriptions}")
+     if not job_descriptions:
+          print("⚠️ No job descriptions found!!!")
+          return []
+
+     # Create embeddings
+     resume_embedding = embed_texts(resume_text, to_tensor=True)
+     job_embeddings = embed_texts(job_descriptions, to_tensor=True)
+
+     # Compute cosine similarity
+     # print("Computing job scores...")
+     scores = cosine_similarity(
+          resume_embedding.cpu().reshape(1, -1),
+          job_embeddings.cpu().numpy()
+     )[0]
+
+     # Rank and return top matches
+     ranked = sorted(
+          zip(job_descriptions, scores),
+          key=lambda x: x[1],
+          reverse=True
+     )
+
+     if top_k:
+          return ranked[:top_k]
+     return ranked
