@@ -2,7 +2,7 @@ import os
 import sqlite3
 import numpy as np
 from backend.matcher.filtering import filter_jobs
-from backend.db.jobs_db import init_db, save_jobs_to_db
+from backend.db.app_db import _init_db, save_jobs_to_db
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent / "test_jobs.db"
@@ -10,7 +10,7 @@ def setup_module(module):
     """Setup test DB and ensure clean state."""
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
-    init_db(DB_PATH)
+    _init_db(DB_PATH)
 
 def test_filter_and_store_pipeline():
     resume_embedding = np.array([1.0, 0.0])

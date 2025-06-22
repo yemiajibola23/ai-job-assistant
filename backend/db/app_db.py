@@ -15,8 +15,8 @@ from backend.db.schema import (
 BASE_DIR = Path(__file__).parent
 DB_PATH  = BASE_DIR / "job_assistant.db"
 
-def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+def get_connection(db_path=DB_PATH):
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -155,6 +155,11 @@ def add_application(data: dict[str, Union[str, float, ApplicationStatus]]) -> in
 
     return last_row_id
 
+def get_application_by_id(db: sqlite3.Connection, id: int) -> dict[str, Union[str, float]]:
+    cursor = db.cursor()
+    cursor.execute('SELECT * FROM applications WHERE id = ?', (id, ))
+    return cursor.fetchone()
+
 def get_all_applications() -> list[dict[str, Union[str, float]]]:
     conn, cursor = get_dict_cursor()
 
@@ -185,6 +190,17 @@ def delete_application(application_id: int) -> bool:
 
     return deleted
 
+def update_application_status_and_notes(conn: sqlite3.Connection, id: int, status: str, notes: str):
+    cursor = conn.cursor()
+    cursor.execute("""
+            UPDATE applications
+            SET status = ?, notes = ?
+            WHERE id = ?
+            """,(status, notes, id))
+    conn.commit()
+
+    return cursor.rowcount > 0
+
 def has_seen_job(job_id: str) -> bool:
     conn = get_connection()
     cursor = conn.cursor()
@@ -200,3 +216,5 @@ def mark_job_as_seen(job_id: str):
     cursor.execute("INSERT OR IGNORE INTO seen_jobs (job_id) VALUES (?)", (job_id, ))
     conn.commit()
     conn.close()
+
+
