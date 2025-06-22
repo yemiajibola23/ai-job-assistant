@@ -190,13 +190,14 @@ def delete_application(application_id: int) -> bool:
 
     return deleted
 
-def update_application_status_and_notes(conn: sqlite3.Connection, id: int, status: str, notes: str):
+def update_application_status_and_notes(conn: sqlite3.Connection, id: int, status: str, notes: str, updated_at: Optional[str]=None):
+    updated_at = updated_at or datetime.now().isoformat()
     cursor = conn.cursor()
     cursor.execute("""
             UPDATE applications
-            SET status = ?, notes = ?
+            SET status = ?, notes = ?, updated_at = ?
             WHERE id = ?
-            """,(status, notes, id))
+            """,(status, notes, updated_at, id))
     conn.commit()
 
     return cursor.rowcount > 0
