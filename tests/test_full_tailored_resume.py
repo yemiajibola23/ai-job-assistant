@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
 from pathlib import Path
-import backend.generator.services.generate_tailored_resume as resume_module
+import generation.resume as resume_module
 
 def test_generate_full_tailored_resume_creates_markdown(tmp_path):
     job_description = "Looking for an iOS engineer with Swift, SwiftUI, and MVVM experience."
