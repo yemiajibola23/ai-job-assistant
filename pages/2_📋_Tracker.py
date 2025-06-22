@@ -1,17 +1,21 @@
 import streamlit as st
 from backend.dashboard import get_all_applications_ordered_by_date_created
 from app.components.db import get_db_connection
+from app.components.tracker_filters import tracker_score_filter
 
 st.set_page_config(page_title="📋 Job Tracker", layout="wide")
 st.title("📋 Job Application Tracker")
 
-# Step 1: DB connection
-db = get_db_connection()
+best_matches_only, threshold = tracker_score_filter()
 
-# Step 2: Load applications
+db = get_db_connection()
 applications = get_all_applications_ordered_by_date_created(db)
 
-# Step 3: Display 
+if best_matches_only:
+    applications = [app for app in applications if app["match_score"] >= threshold]
+
+# st.write("🧪 DEBUG SAMPLE ROW:", applications[0])
+
 if not applications:
     st.info("No applications saved yet")
 else:
