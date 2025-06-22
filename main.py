@@ -56,5 +56,10 @@ if st.button("🔎 Search"):
    scored_jobs = fetch_and_score_jobs(result, "tests/data/yemi_resume.pdf")
    
    for job in scored_jobs:
-      st.text(f"{job['title']} at {job['company']} (score: {job['score']: .3f})")
+    st.text(f"{job['title']} at {job['company']} (score: {job['score']: .3f})")
    
+   saved_count = save_jobs_to_db(scored_jobs)
+   if saved_count:
+    st.success(f"💾 {saved_count} new jobs saved to the tracker!")
+   else:
+    st.info("🟰 No new jobs to save — all were already seen.")

@@ -37,3 +37,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
+
+insert_job_sql = """
+    INSERT OR IGNORE INTO jobs (
+        id, title, company, location, url, description, score
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    """
