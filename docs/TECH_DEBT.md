@@ -16,3 +16,6 @@
   - Estimated Time: 1.5–2 hrs
   - Priority: Medium – not blocking current flow but valuable for production
   - Tags: `nlp`, `job parsing`, `title extraction`, `ml-upgrade`
+
+- [ ] Refactor app_db.py to support full dependency injection and testability for all functions (not just update_application_status_and_notes)
+

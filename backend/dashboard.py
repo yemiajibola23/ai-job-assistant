@@ -19,7 +19,7 @@ def get_application_count_grouped_by_status(db:  sqlite3.Connection) -> dict:
 
 def get_all_applications_ordered_by_date_created(db: sqlite3.Connection):
     cursor = db.cursor()
-    cursor.execute('SELECT job_title, company_name, status, location, match_score, created_at FROM applications ORDER BY created_at DESC')
+    cursor.execute('SELECT id, job_title, company_name, status, location, match_score, notes, created_at FROM applications ORDER BY created_at DESC')
 
     return [dict(row) for row in cursor.fetchall()]
 
