@@ -1,5 +1,5 @@
 import sqlite3
-from backend.db.app_db import get_application_by_id, update_application_status_and_notes
+from backend.db.application_dao import get_application_by_id, update_application_status_and_notes
 from datetime import datetime
 import time
 from typing import Optional

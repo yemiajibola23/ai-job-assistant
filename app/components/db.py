@@ -1,1 +1,1 @@
-from backend.db.app_db import get_connection as get_db_connection
+from backend.db.connection import get_connection as get_db_connection
