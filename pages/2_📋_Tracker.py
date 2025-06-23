@@ -1,9 +1,8 @@
 import streamlit as st
 from backend.dashboard import get_all_applications_ordered_by_date_created
-from app.components.tracker_filters import tracker_score_filter
+from ui.components.job_filter_controls import tracker_score_filter
 from backend.db.application_dao import update_application_status_and_notes
-from app.components.db import get_db_connection
-
+from backend.db.connection import get_connection as get_db_connection
 st.set_page_config(page_title="📋 Job Tracker", layout="wide")
 st.title("📋 Job Application Tracker")
 

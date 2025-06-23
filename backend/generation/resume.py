@@ -1,6 +1,6 @@
 from pathlib import Path
-from openai_client import get_openai_response
-from prompts import SUMMARY_PROMPT, BULLETS_PROMPT
+from backend.generation.openai_client import get_openai_response
+from backend.generation.prompts import SUMMARY_PROMPT, BULLETS_PROMPT
 import re
 
 def generate_full_tailored_resume(job_id: str, resume_data: dict, job_description: str) -> str:

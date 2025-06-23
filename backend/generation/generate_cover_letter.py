@@ -2,7 +2,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from pathlib import Path
-from generation.export import convert_markdown_to_pdf
+from backend.generation.export import convert_markdown_to_pdf
 from backend.generation.prompts import COVER_LETTER_PROMPT
 
 load_dotenv()

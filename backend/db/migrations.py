@@ -3,7 +3,7 @@
 import sqlite3
 from pathlib import Path
 from backend.db.schema import create_applications_table, create_jobs_table, create_seen_jobs_table
-from backend.db.app_db import DB_PATH
+from backend.db.connection import DB_PATH
 
 def init_schema(cursor):
     cursor.execute(create_applications_table)

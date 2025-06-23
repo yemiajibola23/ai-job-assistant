@@ -1,1 +1,0 @@
-from backend.db.connection import get_connection as get_db_connection

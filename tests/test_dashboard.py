@@ -2,10 +2,11 @@ import sqlite3
 import pytest
 from backend.dashboard import get_dashboard_data, get_application_count, get_application_count_grouped_by_status
 from backend.enums.application_status import ApplicationStatus
-
+from backend.db.schema import create_applications_table
 
 def create_table(conn: sqlite3.Connection):
-    pass
+    cursor = conn.cursor()
+    cursor.execute(create_applications_table)
 
 
 @pytest.fixture

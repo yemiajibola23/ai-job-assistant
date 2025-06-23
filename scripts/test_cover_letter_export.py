@@ -1,4 +1,4 @@
-from generation.services.generate_cover_letter import generate_cover_letter_pdf
+from backend.generation.generate_cover_letter import generate_cover_letter_pdf
 
 resume_summary = "Experienced iOS engineer with Swift, SwiftUI, and MVVM expertise."
 job_description = "We're hiring a mobile engineer to lead iOS development on our next-gen app."

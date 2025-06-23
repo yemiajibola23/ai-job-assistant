@@ -1,5 +1,5 @@
-from generation.resume import generate_full_tailored_resume
-from generation.export import convert_markdown_to_pdf
+from backend.generation.resume import generate_full_tailored_resume
+from backend.generation.export import convert_markdown_to_pdf
 
 resume_data = {
     "name": "Yemi Ajibola",

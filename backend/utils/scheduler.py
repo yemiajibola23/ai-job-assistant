@@ -1,8 +1,9 @@
 import schedule
 import time
-from backend.db.app_db import has_seen_job, mark_job_as_seen
-
-def run_scheduler_job(job_fetcher, handler):
+from backend.db.job_dao import has_seen_job, mark_job_as_seen
+import sqlite3
+conn = sqlite3.connect("job-assistant.db")
+def run_scheduler_job(conn, job_fetcher, handler):
     current_jobs = job_fetcher()
 
     print(f"📦 Total jobs fetched: {len(current_jobs)}")
@@ -10,9 +11,9 @@ def run_scheduler_job(job_fetcher, handler):
     new_jobs = []
     for job in current_jobs:
         job_id = job.get("id")
-        if job_id and not has_seen_job(job_id):
+        if job_id and not has_seen_job(conn, job_id):
             new_jobs.append(job)
-            mark_job_as_seen(job_id)
+            mark_job_as_seen(conn, job_id)
 
     print(f"🧮 New unseen jobs: {len(new_jobs)}")
     if new_jobs:
@@ -20,7 +21,7 @@ def run_scheduler_job(job_fetcher, handler):
 
 
 def start_scheduler_loop(job_fetcher, handler, interval=10):
-    schedule.every(interval).seconds.do(lambda: run_scheduler_job(job_fetcher, handler))
+    schedule.every(interval).seconds.do(lambda: run_scheduler_job(conn, job_fetcher, handler))
 
     print(f"🔄 Scheduler started: checking every {interval} seconds...\n")
 
