@@ -1,12 +1,13 @@
 from enum import Enum
+from backend.utils.constants import APPLICATION_STATUSES
 
 class ApplicationStatus(Enum):
-    INTERESTED = "Interested"
-    APPLIED = "Applied"
-    INTERVIEW = "Interviewing"
-    OFFER = "Offer received"
-    REJECTED = "Rejected"
-    SAVED = "Saved"
+    INTERESTED = APPLICATION_STATUSES[0]
+    APPLIED = APPLICATION_STATUSES[1]
+    INTERVIEW = APPLICATION_STATUSES[2]
+    OFFER = APPLICATION_STATUSES[3]
+    REJECTED = APPLICATION_STATUSES[4]
+    SAVED = APPLICATION_STATUSES[5]
 
     
 

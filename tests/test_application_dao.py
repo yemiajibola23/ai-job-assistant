@@ -7,6 +7,7 @@ from backend.enums.application_status import ApplicationStatus
 import os
 import pytest
 from backend.db.schema import create_applications_table
+from backend.utils.constants import APPLICATION_STATUSES
 
 TEST_DB_PATH = "test-job-assistant.db"
 
@@ -55,7 +56,7 @@ def test_add_application_inserts_data():
 def test_get_all_applications_returns_data():
     conn = sqlite3.connect(TEST_DB_PATH)
     conn.row_factory = sqlite3.Row
-    
+
     data = get_test_application(status=ApplicationStatus.INTERVIEW)
     
     app_id = add_application(conn, data)
@@ -106,25 +107,25 @@ def test_delete_application_deletes_correct_application():
 def test_update_application_status_and_notes():
     # Arrange
     db = setup_test_db()
-    insert_mock_application(db, id=1, status="Interested", notes="Old notes")
+    insert_mock_application(db, id=1, status=APPLICATION_STATUSES[0], notes="Old notes")
 
     # Act
-    update_application_status_and_notes(db, 1, "Applied", "Sent application via site")
+    update_application_status_and_notes(db, 1, APPLICATION_STATUSES[1], "Sent application via site")
 
     # Assert
     updated = get_application_by_id(db, 1)
-    assert updated["status"] == "Applied"
+    assert updated["status"] == APPLICATION_STATUSES[1]
     assert updated["notes"] == "Sent application via site"
 
 def test_update_application_status_and_notes_updates_updated_at_timestamp():
      # Arrange
     db = setup_test_db()
     original_time = datetime.now().isoformat()
-    insert_mock_application(db, id=1, status="Interested", notes="Old notes", updated_at=original_time)
+    insert_mock_application(db, id=1, status=APPLICATION_STATUSES[0], notes="Old notes", updated_at=original_time)
 
     # Act
     time.sleep(0.01)
-    update_application_status_and_notes(db, 1, "Applied", "Sent application via site")
+    update_application_status_and_notes(db, 1, APPLICATION_STATUSES[1], "Sent application via site")
 
     # Assert
     updated = get_application_by_id(db, 1)

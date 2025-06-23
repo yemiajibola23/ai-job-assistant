@@ -1,6 +1,7 @@
 from backend.resume.resume_parser import load_resume_text
 from backend.job_search.serpapi_fetcher import job_fetcher
 from backend.ranking.scoring import match_resume_to_jobs
+from backend.utils.constants import DEFAULT_SCORE_THRESHOLD
 
 
 def fetch_and_score_jobs(query_dict: dict, resume_path: str) -> list[dict]:
@@ -30,7 +31,7 @@ def fetch_and_score_jobs(query_dict: dict, resume_path: str) -> list[dict]:
     return jobs
 
 
-def filter_and_match_jobs(jobs: list[dict], resume_text: str, threshold: float = 0.65) -> list[dict]:
+def filter_and_match_jobs(jobs: list[dict], resume_text: str, threshold: float = DEFAULT_SCORE_THRESHOLD) -> list[dict]:
     """
     Filters job list by computing score and applying a similarity threshold.
 

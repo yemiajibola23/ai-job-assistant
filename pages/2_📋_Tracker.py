@@ -3,6 +3,8 @@ from backend.dashboard import get_all_applications_ordered_by_date_created
 from ui.components.job_filter_controls import tracker_score_filter
 from backend.db.application_dao import update_application_status_and_notes
 from backend.db.connection import get_connection as get_db_connection
+from backend.utils.constants import APPLICATION_STATUSES
+
 st.set_page_config(page_title="📋 Job Tracker", layout="wide")
 st.title("📋 Job Application Tracker")
 
@@ -19,7 +21,6 @@ if best_matches_only:
 if not applications:
     st.info("No applications saved yet")
 else:
-    status_options = ["Interested", "Applied", "Interviewing", "Rejected", "Offer"]
     for app in applications:
         # st.write(app)
         with st.container():
@@ -28,8 +29,8 @@ else:
             st.markdown(f"🕒 Applied on: {app['created_at']}")
             
             new_status =  st.selectbox("Select status",
-                                       options=status_options,
-                                       index=status_options.index(app['status']) if app['status'] in status_options else 0, 
+                                       options=APPLICATION_STATUSES,
+                                       index=APPLICATION_STATUSES.index(app['status']) if app['status'] in APPLICATION_STATUSES else 0, 
                                        key=f"status-{app['id']}"
                                        )
             new_notes = st.text_area("Notes", value=app['notes'] or "", key=f"notes-{app['id']}")
