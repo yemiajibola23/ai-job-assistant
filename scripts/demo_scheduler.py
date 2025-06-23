@@ -18,4 +18,11 @@ def handler(new_jobs):
     save_jobs_to_db(conn, new_jobs)
 
 
-start_scheduler_loop(job_fetcher, handler, interval=5)
+
+
+def main():
+    start_scheduler_loop(job_fetcher, handler, interval=5)
+
+if __name__ == "__main__":
+    main()
+
