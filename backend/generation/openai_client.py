@@ -4,15 +4,14 @@ import pprint
 from dotenv import load_dotenv
 
 load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    raise EnvironmentError("Missing OPENAI_API_KEY environment variable")
+
+client = OpenAI(api_key=api_key)
 
 def get_openai_response(prompt: str) -> str:
-    api_key = os.getenv("OPENAI_API_KEY")
-   
-    if not api_key:
-        raise EnvironmentError("Missing OPENAI_API_KEY environment variable")
-    
-    client = OpenAI(api_key=api_key)
-
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[

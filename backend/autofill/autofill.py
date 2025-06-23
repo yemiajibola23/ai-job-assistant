@@ -10,7 +10,7 @@ def autofill_form(page, field_map: dict) -> None:
         except Exception as e:
             print(f"⚠️ Warning: Failed to fill {selector} with value '{value}': {e}")
 
-def extract_form_metadata(page: Page):
+def extract_form_metadata(page: Page) -> list[dict]:
     field_metadata = []
     elements = page.query_selector_all("input, textarea, select")
 
