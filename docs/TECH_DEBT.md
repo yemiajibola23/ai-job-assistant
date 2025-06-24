@@ -18,4 +18,9 @@
   - Tags: `nlp`, `job parsing`, `title extraction`, `ml-upgrade`
 
 - [ ] Refactor app_db.py to support full dependency injection and testability for all functions (not just update_application_status_and_notes)
+- [ ] Move `RESUME_FIELD_MAP` from `autofill.py` to `constants.py` for reuse across modules
+- [ ] Log unmapped `resume_field` keys returned by GPT in `call_gpt_function` for visibility and debugging
+- [ ] Add fallback handling for GPT fields not present in resume (e.g. cover letter text or derived summary)
+- [ ] Consider caching GPT mapping responses per domain to reduce API calls
+- [ ] Add unit tests for `autofill_application()` and `call_gpt_function()` with mock form input
 

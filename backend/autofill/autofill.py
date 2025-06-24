@@ -1,14 +1,36 @@
 from playwright.sync_api import Page
+from backend.autofill.gpt_mapper import call_gpt_function
 
 def fill_form_field(page, selector, value):
     page.locator(selector).fill(value)
 
-def autofill_form(page, field_map: dict) -> None:
+def autofill_form(page: Page, field_map: dict) -> None:
     for selector, value in field_map.items():
         try:
             fill_form_field(page, selector, value)
         except Exception as e:
             print(f"⚠️ Warning: Failed to fill {selector} with value '{value}': {e}")
+
+def autofill_application(page: Page, parsed_resume: dict):
+    form_fields = extract_form_metadata(page)
+    field_mapping = call_gpt_function(form_fields)
+
+    selector_map = {}
+
+    RESUME_FIELD_MAP = {
+        "full_name": "name",
+        "email": "email",
+        "phone": "phone"
+    }
+
+    for resume_field,selector in field_mapping.items():
+        if resume_field in RESUME_FIELD_MAP:
+            resume_key = RESUME_FIELD_MAP[resume_field]
+            value = parsed_resume.get(resume_key)
+            if value:
+                selector_map[selector] = value
+    
+    autofill_form(page, selector_map)
 
 def extract_form_metadata(page: Page) -> list[dict]:
     field_metadata = []
