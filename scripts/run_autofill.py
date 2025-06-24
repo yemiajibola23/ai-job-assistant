@@ -1,10 +1,10 @@
 from playwright.sync_api import sync_playwright
 from backend.autofill.autofill import autofill_application
 from backend.resume.resume_parser import load_resume_text, parse_resume_text
+from backend.utils.constants import TEST_RESUME_PATH
 
 def run():
-    resume_path = "tests/data/yemi_resume.pdf"  # adjust path if needed
-    resume_text = load_resume_text(resume_path)
+    resume_text = load_resume_text(TEST_RESUME_PATH)
     parsed_resume = parse_resume_text(resume_text)
 
     with sync_playwright() as p:

@@ -34,8 +34,6 @@ def save_jobs_to_db(conn: sqlite3.Connection, jobs: List[Dict[str, Any]]) -> int
         conn.rollback()
         raise RuntimeError(f"❌ Failed to save jobs to DB: {e}")
 
-
-
 def has_seen_job(conn: sqlite3.Connection, job_id: str) -> bool:
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM seen_jobs WHERE job_id = ?", (job_id,))
