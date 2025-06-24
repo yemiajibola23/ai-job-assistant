@@ -94,6 +94,16 @@
 - Improve UI layout and spacing
 - Add loading spinners and headers
 
+🟨 Week 3: Advanced Job Automation & Data Resilience
+
+⬜️ Day 21 – Hybrid Job Fetching with Scraper + SerpAPI Fallback
+
+- Implement `scraper_manager.py` to orchestrate job board scrapers (e.g., Lever, Greenhouse)
+- Build 1–2 scraper modules and normalize their outputs
+- Handle scraper edge cases: bot detection, rate limiting, broken selectors
+- Add fallback: use SerpAPI if scraper fails or returns nothing
+- Ensure unified job format and error-tolerant flow
+
   🔁 Ongoing Daily Workflow
 
 🛠️ Note:
