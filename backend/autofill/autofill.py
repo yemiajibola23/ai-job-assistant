@@ -1,5 +1,5 @@
 from playwright.sync_api import Page
-from backend.autofill.gpt_mapper import call_gpt_function
+from backend.autofill.gpt_mapper import map_form_fields
 
 def fill_form_field(page, selector, value):
     page.locator(selector).fill(value)
@@ -13,7 +13,12 @@ def autofill_form(page: Page, field_map: dict) -> None:
 
 def autofill_application(page: Page, parsed_resume: dict):
     form_fields = extract_form_metadata(page)
-    field_mapping = call_gpt_function(form_fields)
+    field_mapping = map_form_fields(form_fields)
+
+    print("📬 GPT field mapping:")
+    for resume_field, selector in field_mapping.items():
+        print(f"{resume_field} → {selector}")
+
 
     selector_map = {}
 
