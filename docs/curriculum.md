@@ -104,6 +104,15 @@
 - Add fallback: use SerpAPI if scraper fails or returns nothing
 - Ensure unified job format and error-tolerant flow
 
+⬜️ Day 22 – Infra Cleanup: Schema + Test Init Refactor
+
+- Centralize table creation using `initialize_all_tables(conn)`
+- Replace scattered raw `cursor.execute()` calls in tests/scripts
+- Ensure test DBs initialize consistently and cleanly
+- Optionally prepare for future migration tools (e.g. Alembic)
+- Add CLI-friendly DB init hook (optional)
+
+
   🔁 Ongoing Daily Workflow
 
 🛠️ Note:

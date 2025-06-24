@@ -6,7 +6,7 @@ from backend.db.connection import _init_db
 from backend.db.job_dao import save_jobs_to_db
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "test_jobs.db"
+DB_PATH = Path(__file__).parent / "test_job.db"
 
 def setup_module(module):
     """Setup test DB and ensure clean state."""
