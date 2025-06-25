@@ -2,10 +2,13 @@ import schedule
 import time
 from backend.db.job_dao import has_seen_job, mark_job_as_seen
 import sqlite3
-conn = sqlite3.connect("job-assistant.db")
-def run_scheduler_job(conn, job_fetcher, handler):
-    current_jobs = job_fetcher()
 
+def run_scheduler_job(conn, job_fetcher, handler, notify=None):
+    current_jobs = job_fetcher()
+    if not current_jobs:
+        print("⚠️ No jobs fetched. Skipping...")
+        return
+    
     print(f"📦 Total jobs fetched: {len(current_jobs)}")
 
     new_jobs = []
@@ -18,13 +21,17 @@ def run_scheduler_job(conn, job_fetcher, handler):
     print(f"🧮 New unseen jobs: {len(new_jobs)}")
     if new_jobs:
         handler(new_jobs)
+        if notify:
+            notify(f"🆕 {len(new_jobs)} new jobs")
 
-
-def start_scheduler_loop(job_fetcher, handler, interval=10):
-    schedule.every(interval).seconds.do(lambda: run_scheduler_job(conn, job_fetcher, handler))
+def start_scheduler_loop(conn, job_fetcher, handler, interval=10, notify=None):
+    schedule.every(interval).seconds.do(lambda: run_scheduler_job(conn, job_fetcher, handler, notify))
 
     print(f"🔄 Scheduler started: checking every {interval} seconds...\n")
 
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    try:
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("🛑 Scheduler stopped by user.")
