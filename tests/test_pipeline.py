@@ -2,9 +2,10 @@ import os
 import sqlite3
 import numpy as np
 from backend.ranking.scoring import filter_jobs
-from backend.db.connection import _init_db
+from backend.db.schema import init_db
 from backend.db.job_dao import save_jobs_to_db
 from pathlib import Path
+from backend.db.connection import get_connection
 
 DB_PATH = Path(__file__).parent / "test_job.db"
 
@@ -12,7 +13,8 @@ def setup_module(module):
     """Setup test DB and ensure clean state."""
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
-    _init_db(DB_PATH)
+    conn = get_connection(DB_PATH)    
+    init_db(conn)
 
 def test_filter_and_store_pipeline():
     resume_embedding = np.array([1.0, 0.0])

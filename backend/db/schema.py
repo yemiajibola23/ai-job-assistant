@@ -13,7 +13,8 @@ create_applications_table ="""
         status TEXT DEFAULT 'Applied',
         notes TEXT,
         created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now'))
+        updated_at TEXT DEFAULT (datetime('now')),
+        synced_at TEXT DEFAULT NULL
     )
     """
 
@@ -43,3 +44,26 @@ insert_job_sql = """
         id, title, company, location, url, description, score
     ) VALUES (?, ?, ?, ?, ?, ?, ?)
     """
+
+
+def init_db(conn):
+    cursor = conn.cursor()
+
+    # Check if any table exists that matches schema
+    for table_name, schema_sql in [
+        ("jobs", create_jobs_table),
+        ("seen_jobs", create_seen_jobs_table),
+        ("applications", create_applications_table),
+    ]:
+    
+
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+        if not cursor.fetchone():
+            print(f"🛠️ Creating table '{table_name}'...")
+            cursor.execute(schema_sql)
+            conn.commit()
+        else:
+            print(f"✅ Table '{table_name}' already exists.")
+
+
+    conn.commit()
