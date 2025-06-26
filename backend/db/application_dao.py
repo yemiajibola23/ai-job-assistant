@@ -95,3 +95,13 @@ def update_application_status_and_notes(conn: sqlite3.Connection, id: int, statu
     conn.commit()
 
     return cursor.rowcount > 0
+
+def update_application_synced_at(conn: sqlite3.Connection, application_id: int):
+    cursor = conn.cursor()
+    cursor.execute("""
+            UPDATE applications
+            SET synced_at = ?
+            WHERE id = ?
+                   """, (datetime.utcnow().isoformat(), application_id))
+    
+    conn.commit()

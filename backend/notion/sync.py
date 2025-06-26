@@ -1,24 +1,24 @@
 from backend.notion.service import push_to_notion, pull_from_notion
-from backend.db.application_dao import get_all_applications
+from backend.db.application_dao import get_all_applications, update_application_synced_at
 from backend.enums.application_status import ApplicationStatus
 from datetime import datetime
 
 __all__ = ["push_to_notion", "pull_from_notion"]
 
-def sync_jobs_to_notion(conn):
-    jobs = get_all_applications(conn)
-    jobs_to_sync = []
+def sync_applications_to_notion(conn):
+    applications = get_all_applications(conn)
+    applications_to_sync = []
 
-    for job in jobs:
-        if job["status"] != ApplicationStatus.INTERVIEW.value:
+    for application in applications:
+        if application["status"] != ApplicationStatus.INTERVIEW.value:
             continue
 
-        if job["synced_at"] is None:
-            jobs_to_sync.append(job)
+        if application["synced_at"] is None:
+            applications_to_sync.append(application)
             continue
 
-        updated_at_raw = job["updated_at"]
-        synced_at_raw = job["synced_at"]
+        updated_at_raw = application["updated_at"]
+        synced_at_raw = application["synced_at"]
 
         if not isinstance(updated_at_raw, str):
             continue  # or raise an error if this is unexpected
@@ -30,7 +30,10 @@ def sync_jobs_to_notion(conn):
         synced_at = datetime.fromisoformat(synced_at_raw)
 
         if updated_at > synced_at:
-            jobs_to_sync.append(job)
+            applications_to_sync.append(application)
         
-    if jobs_to_sync:
-        push_to_notion(jobs_to_sync)
+    if applications_to_sync:
+        push_to_notion(applications_to_sync)
+
+    for application in applications_to_sync:
+        update_application_synced_at(conn, application["id"])

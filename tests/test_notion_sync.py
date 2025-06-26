@@ -2,7 +2,7 @@ from backend.db.connection import get_connection
 from backend.db.schema import init_db
 from backend.db.application_dao import add_application
 from backend.enums.application_status import ApplicationStatus
-from backend.notion.sync import sync_jobs_to_notion
+from backend.notion.sync import sync_applications_to_notion
 
 def set_synced_at(conn, job_url: str, synced_at: str):
     cursor = conn.cursor()
@@ -12,7 +12,7 @@ def set_synced_at(conn, job_url: str, synced_at: str):
     )
     conn.commit()
 
-def test_sync_only_interview_jobs(monkeypatch):
+def test_sync_only_interview_applications(monkeypatch):
     synced_jobs = []
     def mock_push_to_notion(jobs:list[dict])  -> dict:
         for job in jobs:
@@ -72,9 +72,16 @@ def test_sync_only_interview_jobs(monkeypatch):
     set_synced_at(conn, "https://job.d", synced_in_the_future)
 
     monkeypatch.setattr("backend.notion.sync.push_to_notion", mock_push_to_notion)
-    sync_jobs_to_notion(conn)
+    sync_applications_to_notion(conn)
 
     assert "https://job.a" in synced_jobs
     assert "https://job.b" in synced_jobs
     assert "https://job.c" not in synced_jobs
     assert "https://job.d" not in synced_jobs
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT synced_at from applications WHERE job_url=?", ("https://job.a",))
+    row = cursor.fetchone()
+
+    assert row is not None
+    assert row["synced_at"] is not None
