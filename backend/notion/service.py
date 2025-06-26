@@ -6,19 +6,26 @@ load_dotenv()
 
 NOTION_DB_ID = os.getenv("NOTION_DB_ID")
 
-def push_to_notion(jobs: list[dict]) -> dict:
-    """Handles creating or updating a Notion page based on job_url."""
-    print(f"🚀 Pushing {len(jobs)} jobs to Notion (stub)")
-    return {}
+def push_to_notion(jobs: list[dict], client=None) -> dict:
+    if client is None:
+        client = get_notion_client()
+    
+    synced = 0
+    for job in jobs:
+        try:
+            create_page(job, client)
+            synced += 1
+        except Exception as e:
+            print(f"❌ Failed to sync application: {job.get('job_title')} at {job.get('company_name')}")
+            print(f"   Reason: {e}")
+    return { "synced_applications": synced }
+    
 
 def pull_from_notion() -> list[dict]:
     print("⬇️ Pulling jobs from Notion (stub)")
     return []
 
-def create_page(job: dict, client=None):
-    if client is None:
-        client = get_notion_client()
-
+def create_page(job: dict, client):
     payload = {
         "parent": { "database_id": NOTION_DB_ID },
         "properties": {

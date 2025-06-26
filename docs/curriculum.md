@@ -58,25 +58,25 @@
 - Include title, company, location, and score
 - Filter by score
 
-⬜️ Day 15 – Application Status & UI Enhancements
+✅ Day 15 – Application Status & UI Enhancements
 
 - Add editable status (e.g. Interested, Applied, Rejected)
 - Use `st.selectbox()` for inline editing
 - Add optional notes field
 
-⬜️ Day 16 – Application Autofill Setup
+✅ Day 16 – Application Autofill Setup
 
 - Use Playwright to fill demo job forms
 - Map resume data to fields
 - Add submit confirmation
 
-⬜️ Day 17 – Auto Query Mode
+✅ Day 17 – Auto Query Mode
 
 - Use resume to generate structured query
 - Run query → match → save flow with no manual input
 - Trigger via button or background sync
 
-⬜️ Day 18 – Alerts + Watchdog Automation
+✅ Day 18 – Alerts + Watchdog Automation
 
 - Use `watchdog` or `schedule` for timed syncs
 - Alert user or log when new jobs are found
@@ -112,6 +112,26 @@
 - Optionally prepare for future migration tools (e.g. Alembic)
 - Add CLI-friendly DB init hook (optional)
 
+⬜️ Day 23 – Engine-Agnostic Autofill System + Essay Question Handling
+
+- Build a generic DOM-based autofill engine to parse inputs, dropdowns, checkboxes, and file fields
+- Match field labels to internal resume data using heuristics or embeddings
+- Detect long-form essay questions and answer them using:
+  - User-defined responses
+  - Templates with job/resume variables
+  - GPT fallback
+- Submit forms via Playwright and log submission results
+- Scaffold plug-in system for platform-specific enhancements (e.g. Greenhouse, Lever)
+- Set up key files: `essay_handler.py`, `field_matcher.py`, `form_interactor.py`
+
+⬜️ Day 24 – Email Inbox Monitor + Status Sync
+
+- Monitor email inbox (e.g. Gmail via IMAP or Gmail API) for new application-related messages
+- Parse emails to infer job application outcomes or interview invitations
+- Match emails to known applications in DB
+- Update application status (e.g. Interviewing, Rejected, Offer) in SQLite + Notion
+- Create interview entries in Notion if detected
+- Set up core files: `watcher.py`, `parser.py`, `matcher.py`, `status_rules.json`
 
   🔁 Ongoing Daily Workflow
 
