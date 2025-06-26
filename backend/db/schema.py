@@ -1,4 +1,5 @@
 # schema.py
+import sqlite3
 
 create_applications_table ="""
     CREATE TABLE IF NOT EXISTS applications (
@@ -46,7 +47,7 @@ insert_job_sql = """
     """
 
 
-def init_db(conn):
+def init_db(conn: sqlite3.Connection):
     cursor = conn.cursor()
 
     # Check if any table exists that matches schema

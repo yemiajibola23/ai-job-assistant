@@ -11,8 +11,11 @@ from backend.db.schema import (
 BASE_DIR = Path(__file__).parent
 DB_PATH  = BASE_DIR / "job_assistant.db"
 
-def get_connection(db_path=DB_PATH):
-    conn = sqlite3.connect(db_path)
+def get_connection(path: str | Path=DB_PATH):
+    if isinstance(path, Path):
+        path = str(path)
+
+    conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     return conn
 
