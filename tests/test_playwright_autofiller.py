@@ -76,6 +76,15 @@ def test_extract_field_label_uses_label_for_attribute_if_others_missing():
     
     assert label ==  "Full Name From Label"
     
+def test_extract_field_label_uses_parent_text_as_last_resort():
+    mock_field = mock_field_with_attributes({})   
+    mock_field.evaluate.return_value = "Parent Label Value"
+    mock_page = MagicMock() 
+    
+    engine = PlaywrightAutofiller(job_url="https://example.com")
+    label = engine.extract_field_label(mock_field, mock_page)
+    
+    assert label == "Parent Label Value"
 
     
 def test_extract_field_labels_uses_fallbacks():

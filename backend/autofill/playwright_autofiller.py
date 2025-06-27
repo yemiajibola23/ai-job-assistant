@@ -28,6 +28,7 @@ class PlaywrightAutofiller:
                 label_element = page.query_selector(f"label[for='{id}']")
                 if label_element:
                     return label_element.inner_text()
-            return None
+            
+            return field.evaluate("node => node.parentElement?.innerText")
         except Exception as e:
             print(e) # TODO - Replace with proper logging.
