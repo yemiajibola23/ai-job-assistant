@@ -1,9 +1,15 @@
 from unittest.mock import Mock, AsyncMock, MagicMock, patch 
 from backend.autofill.playwright_autofiller import PlaywrightAutofiller
 
-# def mock_field_with_attributes(aria=None, placeholder=None, id=None, label_text=None, parent_text=None):
-#     ...
-#     return mock_field, mock_page
+def mock_field_with_attributes(attr_map: dict):
+    def get_attr_side_effect(attr_name):
+        return attr_map.get(attr_name)
+    
+    mock_field = MagicMock()
+    mock_field.get_attribute.side_effect = get_attr_side_effect
+
+    return mock_field
+    
 
 # Patch the path where sync_playwright is used (not where it's defined)
 @patch("backend.autofill.playwright_autofiller.sync_playwright")
@@ -34,14 +40,9 @@ def test_fill_form_calls_playwright_methods(mock_sync_playwright):
     mock_field.fill.assert_called()
     
 def test_extract_field_label_returns_aria_label_if_available():
-    def get_attr_side_effect(attr_name):
-        if attr_name == "aria-label":
-            return "Aria Label Value"
-        return None
+    attr_map = {"aria-label": "Aria Label Value"}
     
-    mock_field = MagicMock()
-    mock_field.get_attribute.side_effect = get_attr_side_effect
-    
+    mock_field = mock_field_with_attributes(attr_map)    
     mock_page = MagicMock()
     
     engine = PlaywrightAutofiller(job_url="https://example.com")
@@ -49,6 +50,18 @@ def test_extract_field_label_returns_aria_label_if_available():
     
     assert label == "Aria Label Value"
     
+def test_extract_field_label_uses_placeholder_if_aria_missing():
+   
+    attr_map = {"placeholder": "Placeholder Label"}
+    
+    mock_field = mock_field_with_attributes(attr_map) 
+    mock_page = MagicMock()
+    
+    engine = PlaywrightAutofiller(job_url="https://example.com")
+    label = engine.extract_field_label(mock_field, mock_page)
+    
+    assert label == "Placeholder Label"
+
     
 def test_extract_field_labels_uses_fallbacks():
 #     1. Create a mock field with all attributes returning None except "aria-label"

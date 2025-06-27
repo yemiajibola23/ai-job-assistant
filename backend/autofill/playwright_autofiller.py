@@ -17,10 +17,12 @@ class PlaywrightAutofiller:
                
     def extract_field_label(self, field, page):
         try: 
-            label = field.get_attribute("aria-label")
-            if label:
-                return label
-            else:
-                return None
+            aria = field.get_attribute("aria-label")
+            placeholder = field.get_attribute("placeholder")
+            if aria:
+                return aria
+            if placeholder:
+                return placeholder
+            return None
         except Exception as e:
-            print(e)
+            print(e) # TODO - Replace with proper logging.
