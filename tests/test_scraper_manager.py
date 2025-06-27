@@ -63,7 +63,31 @@ def test_scraper_fail_fallback_serpapi(monkeypatch):
     assert result[0]["job_title"] == "iOS Engineer"
     assert result[0]["source"] == "SerpAPI"
 
-# - Test: test_all_scrapers_empty_then_fallback
-#     - lever and greenhouse return empty
-#     - serpapi returns jobs
-#     - assert returned jobs match serpapi output
+def test_all_scrapers_empty_then_fallback(monkeypatch):
+    def mock_lever_fetch_jobs(query):
+        return []
+
+    def mock_greenhouse_fetch_jobs(query):
+        return []
+
+    def mock_ashby_fetch_jobs(query):
+        return []
+
+    def mock_serpapi_fetch_jobs(query):
+        return [{
+            "job_title": "Fallback Engineer",
+            "company_name": "SerpAPI Co",
+            "location": "Remote",
+            "url": "https://jobs.serpapi.com/ios-engineer",
+            "source": "SerpAPI"
+        }]
+
+    monkeypatch.setattr("backend.job_search.lever_scraper.fetch_jobs", mock_lever_fetch_jobs)
+    monkeypatch.setattr("backend.job_search.greenhouse_scraper.fetch_jobs", mock_greenhouse_fetch_jobs)
+    monkeypatch.setattr("backend.job_search.ashby_scraper.fetch_jobs", mock_ashby_fetch_jobs)
+    monkeypatch.setattr("backend.job_search.serpapi_fetcher.fetch_jobs", mock_serpapi_fetch_jobs)
+
+    result = scraper_manager.get_jobs("developer")
+
+    assert len(result) == 1
+    assert result[0]["source"] == "SerpAPI"
