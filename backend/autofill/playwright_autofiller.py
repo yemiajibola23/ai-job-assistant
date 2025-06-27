@@ -14,3 +14,13 @@ class PlaywrightAutofiller:
            fields =page.query_selector_all("input, textarea")
            for field in fields:
                field.fill("placeholder")  # TODO: replace with real matched value
+               
+    def extract_field_label(self, field, page):
+        try: 
+            label = field.get_attribute("aria-label")
+            if label:
+                return label
+            else:
+                return None
+        except Exception as e:
+            print(e)
