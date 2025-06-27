@@ -3,8 +3,6 @@ from backend.db.application_dao import get_all_applications, update_application_
 from backend.enums.application_status import ApplicationStatus
 from datetime import datetime
 
-__all__ = ["push_to_notion", "pull_from_notion"]
-
 def sync_applications_to_notion(conn):
     applications = get_all_applications(conn)
     applications_to_sync = []

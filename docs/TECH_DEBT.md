@@ -24,3 +24,15 @@
 - [ ] Consider caching GPT mapping responses per domain to reduce API calls
 - [ ] Add unit tests for `autofill_application()` and `call_gpt_function()` with mock form input
 
+- [ ] 📁 **Organize tests into logical subfolders and layers**
+  - Separate `unit/` and `integration/` tests for clarity and CI targeting
+  - Move Notion integration test to `tests/integration/test_notion_sync.py`
+  - Consider subfolders per domain (e.g. `notion`, `db`, `matching`)
+  - Add `__init__.py` to make test folders import-safe
+  - Optionally: Add `conftest.py` for shared fixtures or cleanup hooks
+  - Estimated Time: 1 hr
+  - Priority: Medium – improves structure and future test scaling
+  - Tags: `testing`, `structure`, `refactor`, `integration`
+
+
+

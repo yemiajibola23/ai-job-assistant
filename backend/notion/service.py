@@ -1,6 +1,8 @@
 from backend.notion.notion_client import get_notion_client
+from notion_client import Client
 from dotenv import load_dotenv
 import os
+from typing import Any
 
 load_dotenv()
 
@@ -11,7 +13,6 @@ def push_to_notion(jobs: list[dict], client=None) -> dict:
         client = get_notion_client()
     
     synced = 0
-
     for job in jobs:
         try:
             page = find_page_by_job_url(job["job_url"], client)
@@ -26,9 +27,42 @@ def push_to_notion(jobs: list[dict], client=None) -> dict:
     return { "synced_applications": synced }
     
 
-def pull_from_notion() -> list[dict]:
-    print("⬇️ Pulling jobs from Notion (stub)")
-    return []
+def query_notion_database(client: Client, db_id: str) -> Any:
+    return client.databases.query(database_id=db_id)
+
+def pull_from_notion(client=None) -> list[dict]:
+    if client is None:
+        client = get_notion_client()
+    
+    print(type(client))  # Make sure it's <class 'notion_client.client.Client'>
+
+    if NOTION_DB_ID is None:
+        raise EnvironmentError("NOTION_DB_ID is not set")
+
+
+    query_results = query_notion_database(client, NOTION_DB_ID)
+    applications = []
+
+    
+    for result in query_results["results"]:
+        props = result["properties"]
+        
+        job = {
+            "company_name": props["Name"]["title"][0]["text"]["content"],
+            "job_title": props["Position Title"]["rich_text"][0]["text"]["content"],
+            "location": ", ".join([loc["name"] for loc in props["Location"]["multi_select"]]),
+            "job_url": props["Job Link"]["url"],
+            "status": props["Status"]["status"]["name"],
+        }
+
+        interview_prop = props.get("Interview Stage")
+        if interview_prop and interview_prop.get("select"):
+            job["interview_stage"] = interview_prop["select"]["name"]
+        
+        applications.append(job)
+
+
+    return applications
 
 def find_page_by_job_url(job_url: str, client) -> dict | None:
     query_result = client.databases.query(database_id=NOTION_DB_ID, filter={

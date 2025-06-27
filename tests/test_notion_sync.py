@@ -19,8 +19,6 @@ def test_sync_only_interview_applications(monkeypatch):
             synced_jobs.append(job["job_url"])
         return {}
 
-    
-
     # 1. Get a test DB connection
     conn = get_connection(":memory:")
     init_db(conn)
@@ -68,7 +66,7 @@ def test_sync_only_interview_applications(monkeypatch):
     }
 
     add_application(conn, jobD)
-    synced_in_the_future = "2025-06-26T10:00:00"
+    synced_in_the_future = "2026-07-01T10:00:00"
     set_synced_at(conn, "https://job.d", synced_in_the_future)
 
     monkeypatch.setattr("backend.notion.sync.push_to_notion", mock_push_to_notion)
