@@ -88,33 +88,21 @@ def test_extract_field_label_uses_parent_text_as_last_resort():
 
     
 def test_extract_field_labels_uses_fallbacks():
-#     1. Create a mock field with all attributes returning None except "aria-label"
-#    - get_attribute("aria-label") → "Name from Aria"
-    mock_field = MagicMock()
-
-    # 2. Confirm extract_field_label(field, page) returns "Name from Aria"
-
-    # ---
-
-    # 3. Create another mock field:
-    #    - get_attribute("aria-label") → None
-    #    - get_attribute("placeholder") → "Name from Placeholder"
-
-    # 4. Confirm extract_field_label(field, page) returns "Name from Placeholder"
-
-    # ---
-
-    # 5. Create another field with:
-    #    - aria-label and placeholder → None
-    #    - get_attribute("id") → "name-field"
-    #    - page.query_selector("label[for='name-field']").inner_text() → "Name from Label Tag"
-
-    # 6. Confirm result is "Name from Label Tag"
-
-    # ---
-
-    # 7. Final fallback:
-    #    - All others return None
-    #    - field.evaluate(...) returns "Name from Parent"
-
-    # 8. Confirm result is "Name from Parent"
+    aria_label = mock_field_with_attributes({"aria-label": "Aria Label Value"})
+    placeholder_label = mock_field_with_attributes({"placeholder": "Placeholder Label Value"})
+    id_label =  mock_field_with_attributes({"id": "full-name"})
+    
+    mock_page = MagicMock()
+    label_element = MagicMock()
+    label_element.inner_text.return_value = "Label From Tag"
+    mock_page.query_selector.return_value = label_element
+    
+    parent_label = mock_field_with_attributes({})
+    parent_label.evaluate.return_value = "Parent Label Text"
+    
+    engine = PlaywrightAutofiller(job_url="https://example.com")
+    
+    assert engine.extract_field_label(aria_label, mock_page) == "Aria Label Value"
+    assert engine.extract_field_label(placeholder_label, mock_page) == "Placeholder Label Value"
+    assert engine.extract_field_label(id_label, mock_page) == "Label From Tag"
+    assert engine.extract_field_label(parent_label, mock_page) == "Parent Label Text"
