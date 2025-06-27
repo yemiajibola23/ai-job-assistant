@@ -6,12 +6,7 @@ import json
 load_dotenv()
 api_key = os.getenv("SERP_API_KEY")
 
-def build_query_string(job_title, location=None, work_type=None, level=None):
-    parts = [level, job_title, work_type, location]
-    return " ".join([p.strip() for p in parts if p])
-
-def job_fetcher(job_title, location=None, work_type=None, level=None) -> list[dict]:
-    query = build_query_string(job_title, location, work_type, level)
+def fetch_jobs(query: str) -> list[dict]:
     print(f"Query string: {query}")
     params = {
         "engine": "google_jobs",
