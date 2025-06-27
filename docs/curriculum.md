@@ -133,6 +133,33 @@
 - Create interview entries in Notion if detected
 - Set up core files: `watcher.py`, `parser.py`, `matcher.py`, `status_rules.json`
 
+⬜️ Day 26 – Lever Scraper Implementation
+
+- Use requests or httpx to fetch jobs from Lever job boards
+- Parse JSON or HTML structure to extract job listings
+- Implement `fetch_jobs(query)` in `lever_scraper.py`
+- Normalize output format (title, company, location, url, source)
+- Write integration test with mocked page response
+
+
+⬜️ Day 27 – Ashby Scraper Implementation
+
+- Identify Ashby job board structure and query format
+- Use requests + BeautifulSoup to extract listings
+- Handle pagination or filters if present
+- Implement `fetch_jobs(query)` in `ashby_scraper.py`
+- Write integration test for core functionality
+
+
+⬜️ Day 28 – Greenhouse Scraper Implementation
+
+- Scrape from public Greenhouse-hosted job boards
+- Handle embedded JSON or predictable HTML structure
+- Implement `fetch_jobs(query)` in `greenhouse_scraper.py`
+- Normalize structure and test with fallback logic
+- Add edge case handling: expired postings, missing data
+
+
   🔁 Ongoing Daily Workflow
 
 🛠️ Note:
