@@ -19,10 +19,15 @@ class PlaywrightAutofiller:
         try: 
             aria = field.get_attribute("aria-label")
             placeholder = field.get_attribute("placeholder")
+            id = field.get_attribute("id")
             if aria:
                 return aria
             if placeholder:
                 return placeholder
+            if id:
+                label_element = page.query_selector(f"label[for='{id}']")
+                if label_element:
+                    return label_element.inner_text()
             return None
         except Exception as e:
             print(e) # TODO - Replace with proper logging.

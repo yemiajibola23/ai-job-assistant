@@ -61,6 +61,21 @@ def test_extract_field_label_uses_placeholder_if_aria_missing():
     label = engine.extract_field_label(mock_field, mock_page)
     
     assert label == "Placeholder Label"
+    
+def test_extract_field_label_uses_label_for_attribute_if_others_missing():
+    attr_map = {"id": "full-name"}
+    mock_field = mock_field_with_attributes(attr_map)
+    mock_page = MagicMock()
+    label_element = MagicMock()
+    
+    mock_page.query_selector.return_value = label_element
+    label_element.inner_text.return_value = "Full Name From Label"
+    
+    engine = PlaywrightAutofiller(job_url="https://example.com")
+    label = engine.extract_field_label(mock_field, mock_page)
+    
+    assert label ==  "Full Name From Label"
+    
 
     
 def test_extract_field_labels_uses_fallbacks():
