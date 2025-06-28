@@ -82,7 +82,7 @@
 - Alert user or log when new jobs are found
 - Run `Auto Query Mode` on a loop
 
-⬜️ Day 19 – Notion Sync (Revisited)
+✅ Day 19 – Notion Sync (Revisited)
 
 - Push saved jobs (and status) to Notion
 - Sync new/updated jobs only
@@ -96,7 +96,7 @@
 
 🟨 Week 3: Advanced Job Automation & Data Resilience
 
-⬜️ Day 21 – Hybrid Job Fetching with Scraper + SerpAPI Fallback
+✅ Day 21 – Hybrid Job Fetching with Scraper + SerpAPI Fallback
 
 - Implement `scraper_manager.py` to orchestrate job board scrapers (e.g., Lever, Greenhouse)
 - Build 1–2 scraper modules and normalize their outputs
@@ -112,7 +112,7 @@
 - Optionally prepare for future migration tools (e.g. Alembic)
 - Add CLI-friendly DB init hook (optional)
 
-⬜️ Day 23 – Engine-Agnostic Autofill System + Essay Question Handling
+✅ Day 23 – Engine-Agnostic Autofill System + Essay Question Handling
 
 - Build a generic DOM-based autofill engine to parse inputs, dropdowns, checkboxes, and file fields
 - Match field labels to internal resume data using heuristics or embeddings
