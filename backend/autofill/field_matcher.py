@@ -26,5 +26,17 @@ def normalize_label(label: str) -> str:
 def match_label_to_key(label: str) -> Optional[str]:
     key = normalize_label(label)
     
-    return LABEL_KEY_MAP.get(key)
+    if key in LABEL_KEY_MAP:
+        return LABEL_KEY_MAP[key]
+    
+    if "linkedin" in key:
+        return "linkedin"
+    
+    if "resume" in key:
+        return "resume"
+    
+    if "cover" in key and "letter" in key:
+        return "cover_letter"
+    
+    return None
     
