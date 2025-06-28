@@ -33,6 +33,7 @@ def test_fill_form_calls_playwright_methods(mock_sync_playwright):
     }
 
     engine = PlaywrightAutofiller(job_url="https://example.com")
+    engine.extract_field_label = MagicMock(return_value="Full Name")
     engine.fill_form(application_data)
 
     mock_page.goto.assert_called_once_with("https://example.com")
@@ -106,3 +107,20 @@ def test_extract_field_labels_uses_fallbacks():
     assert engine.extract_field_label(placeholder_label, mock_page) == "Placeholder Label Value"
     assert engine.extract_field_label(id_label, mock_page) == "Label From Tag"
     assert engine.extract_field_label(parent_label, mock_page) == "Parent Label Text"
+
+@patch("backend.autofill.playwright_autofiller.match_label_to_key")    
+def test_fill_form_fills_correct_field_based_on_label(mock_match_label_to_key):
+    mock_field = MagicMock()
+    mock_page = MagicMock()
+    mock_page.query_selector_all.return_value = [mock_field]
+    
+    engine = PlaywrightAutofiller("https://example.com")
+    engine.extract_field_label = MagicMock(return_value="Full Name")
+    
+    mock_match_label_to_key.return_value = "name"
+    
+    application_data = {"name": "Test User"}
+    
+    engine.fill_form(application_data, mock_page)
+    
+    mock_field.fill.assert_called_once_with("Test User")
