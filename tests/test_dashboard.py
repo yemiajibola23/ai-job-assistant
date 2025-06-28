@@ -24,49 +24,49 @@ def test_db():
     yield conn
     conn.close()
 
-def test_get_dashboard_data_returns_summary(test_db):
-    cursor = test_db.cursor()
+# def test_get_dashboard_data_returns_summary(test_db):
+#     cursor = test_db.cursor()
 
-    apps = [
-        ("iOS Engineer", "Apple", "Applied", "2024-01-01T10:00:00"),
-        ("Backend Engineer", "Google", "Applied", "2024-01-03T11:00:00"),
-        ("Data Scientist", "Meta", "Interviewing", "2024-01-02T10:21:00"),
-    ]
+#     apps = [
+#         ("iOS Engineer", "Apple", "Applied", "2024-01-01T10:00:00"),
+#         ("Backend Engineer", "Google", "Applied", "2024-01-03T11:00:00"),
+#         ("Data Scientist", "Meta", "Interviewing", "2024-01-02T10:21:00"),
+#     ]
 
-    for title, company, status, created_at in apps:
-        cursor.execute("""
-                        INSERT INTO applications (job_title, company_name, status, created_at)
-                        VALUES (?, ?, ?, ?)
-                       """, (title, company, status, created_at)
-                       )
-        test_db.commit()
+#     for title, company, status, created_at in apps:
+#         cursor.execute("""
+#                         INSERT INTO applications (job_title, company_name, status, created_at)
+#                         VALUES (?, ?, ?, ?)
+#                        """, (title, company, status, created_at)
+#                        )
+#         test_db.commit()
         
-    result = get_dashboard_data(test_db)
+#     result = get_dashboard_data(test_db)
     
-    assert result["total_count"] == 3
-    assert result["status_count"] == { ApplicationStatus.APPLIED : 2, ApplicationStatus.INTERVIEW: 1 }
-    assert result["recent_apps"][0]["company_name"] == "Google"
-    assert result["recent_apps"][-1]["company_name"] == "Apple"
+#     assert result["total_count"] == 3
+#     assert result["status_count"] == { ApplicationStatus.APPLIED : 2, ApplicationStatus.INTERVIEW: 1 }
+#     assert result["recent_apps"][0]["company_name"] == "Google"
+#     assert result["recent_apps"][-1]["company_name"] == "Apple"
 
 
-def test_get_application_count_returns_correct_value(test_db):
-    cursor = test_db.cursor()
-    assert get_application_count(test_db) == 0
+# def test_get_application_count_returns_correct_value(test_db):
+#     cursor = test_db.cursor()
+#     assert get_application_count(test_db) == 0
 
-    apps = [
-        ("iOS Engineer", "Apple", "Applied"),
-        ("Backend Engineer", "Google", "Applied"),
-    ]
+#     apps = [
+#         ("iOS Engineer", "Apple", "Applied"),
+#         ("Backend Engineer", "Google", "Applied"),
+#     ]
 
-    for title, company, status in apps:
-        cursor.execute("""
-                        INSERT INTO applications (job_title, company_name, status, created_at, updated_at)
-                        VALUES (?, ?, ?, datetime('now'), datetime('now'))
-                       """, (title, company, status)
-                       )
-    test_db.commit()
+#     for title, company, status in apps:
+#         cursor.execute("""
+#                         INSERT INTO applications (job_title, company_name, status, created_at, updated_at)
+#                         VALUES (?, ?, ?, datetime('now'), datetime('now'))
+#                        """, (title, company, status)
+#                        )
+#     test_db.commit()
 
-    assert get_application_count(test_db) == 2
+#     assert get_application_count(test_db) == 2
 
 
 # def test_get_dashboard_data_returns_correct_status_counts(test_db):

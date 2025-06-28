@@ -1,7 +1,6 @@
 from backend.resume.resume_parser import parse_resume_text, load_resume_text
 import sqlite3
-from backend.job_search.serpapi_fetcher import build_query_string
-from backend.ranking.pipeline import fetch_and_score_jobs
+from backend.ranking.pipeline import fetch_and_score_jobs, build_query_string
 from backend.db.job_dao import save_jobs_to_db
 from backend.job_search.query_utils import extract_query_fields
 

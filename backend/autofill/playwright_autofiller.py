@@ -28,11 +28,11 @@ class PlaywrightAutofiller:
                 continue
             key = match_label_to_key(label)
             if not key:
-                print(f"Unrecognized label: {label}")
+                print(f"[matcher] ❌ Unrecognized label → '{label.strip()}'")
                 continue
             value = application_data.get(key)
             if not value:
-                print(f"No resume value found for key: {key}")
+                print(f"[matcher] ⚠️ No resume value found for key: '{key}' (matched from '{label.strip()}')")
                 continue
             field.fill(value)
                        

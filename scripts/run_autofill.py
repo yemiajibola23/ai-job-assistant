@@ -2,6 +2,7 @@ from playwright.sync_api import sync_playwright
 from backend.autofill.autofill import autofill_application
 from backend.resume.resume_parser import load_resume_text, parse_resume_text
 from backend.utils.constants import TEST_RESUME_PATH
+from backend.autofill.playwright_autofiller import PlaywrightAutofiller
 
 def run():
     resume_text = load_resume_text(TEST_RESUME_PATH)
@@ -11,8 +12,9 @@ def run():
         browser = p.chromium.launch(headless=False, slow_mo=100)
         page = browser.new_page(viewport={"width": 1280, "height": 1000})
         page.goto("https://httpbin.org/forms/post")
-
-        autofill_application(page, parsed_resume)
+        autofiller = PlaywrightAutofiller("https://httpbin.org/forms/post")
+        autofiller.fill_form(parsed_resume, page)
+        # autofill_application(page, parsed_resume)
 
         input("✅ Press Enter to submit the form...")
 
