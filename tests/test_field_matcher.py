@@ -17,3 +17,6 @@ def test_rule_matching_linkedin_profile():
 
 def test_rule_matching_upload_resume():
     assert match_label_to_key("Resume/CV") == "resume"
+    
+def test_fuzzy_matching_contact_email():
+    assert match_label_to_key("Contct Email") == "email"

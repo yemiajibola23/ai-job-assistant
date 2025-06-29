@@ -1,5 +1,6 @@
 from typing import Optional
 import re
+from difflib import get_close_matches
 
 LABEL_KEY_MAP = {
     "name": "name",
@@ -37,6 +38,11 @@ def match_label_to_key(label: str) -> Optional[str]:
     
     if "cover" in key and "letter" in key:
         return "cover_letter"
+    
+    matches = get_close_matches(key, LABEL_KEY_MAP.keys(), n=1, cutoff=0.85)
+    if matches:
+        print(f"[matcher] 🤏 Fuzzy matched '{label.strip()}' → '{matches[0]}'")
+        return LABEL_KEY_MAP[matches[0]]
     
     return None
     
