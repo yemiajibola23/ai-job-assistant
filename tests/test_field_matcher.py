@@ -20,3 +20,7 @@ def test_rule_matching_upload_resume():
     
 def test_fuzzy_matching_contact_email():
     assert match_label_to_key("Contct Email") == "email"
+    
+def test_embedding_matching():
+   assert match_label_to_key("Your online CV") == "resume"
+

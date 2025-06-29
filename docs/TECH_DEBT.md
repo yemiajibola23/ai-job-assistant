@@ -35,4 +35,31 @@
   - Tags: `testing`, `structure`, `refactor`, `integration`
 
 
+- [ ] 🧠 **Add confidence bands to embedding-based matcher**
+  - Enhance `FieldMatcher.match()` to return both match key and similarity score
+  - Categorize results into confidence levels (`high`, `medium`, `low`)
+  - Allow downstream logic (e.g. autofill) to vary behavior based on confidence
+  - Log or flag low-confidence matches for review or active learning
+  - Consider future UI: display warnings or allow manual override when confidence is low
+  - Estimated Time: 1.5–2 hrs
+  - Priority: Medium – improves matching safety, debugging, and user feedback
+  - Tags: `matching`, `AI`, `autofill`, `refactor`, `future`
 
+  - [ ] 🧪 Improve test coverage across matcher logic paths
+  - Add explicit tests for:
+    - Pure embedding match (already done ✅)
+    - Pure rule match (existing ✅)
+    - Fallback to heuristic rules after failed embedding
+    - Fallback to fuzzy match (Levenshtein)
+  - Include debug assertions if needed to ensure fallbacks are triggering correctly
+  - Estimated Time: 30 mins
+  - Priority: Medium
+  - Tags: `testing`, `matching`, `fallbacks`
+  
+- [ ] 🔍 Explore resume field type classification (text vs. upload vs. URL)
+  - Recognize that some labels (e.g. "Upload your resume") require different handling
+  - Design a system to detect or infer expected field type based on label + input type
+  - Could involve DOM inspection, label heuristics, or ML classification
+  - Estimated Time: 2–3 hrs
+  - Priority: High (affects autofill correctness)
+  - Tags: `autofill`, `form-intent`, `field-types`
