@@ -11,6 +11,8 @@ def extract_query_fields(parsed_resume: dict) -> dict:
         work_type = "Full-time"
     elif "contract" in summary:
          work_type = "Contract"
+    elif "part-time" in summary:
+        work_type = "Part-time"
          
     title_lower = raw_title.lower()
     if "senior" in title_lower or "lead" in title_lower:
