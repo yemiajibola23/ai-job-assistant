@@ -7,7 +7,7 @@
 ### 🔍 job_search
 
 - [x] Resume parsed into structured fields
-- [ ] Resume embedded as vector for profile matching
+- [x] Resume embedded as vector for profile matching
 - [x] Search query auto-generated from resume
 - [x] API fallback works (SerpAPI)
 - [ ] Scrapers implemented (Lever, Greenhouse, Ashby)
