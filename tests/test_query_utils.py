@@ -12,9 +12,10 @@ def test_extract_query_fields_happy_path():
     }
 
     expected = {
-        "job_title": "Senior iOS Engineer",
+        "job_title": "iOS Engineer",
         "location": "St. Louis, MO",
         "work_type": "Full-time",
+        "inferred_level": "Senior"
     }
 
     result = extract_query_fields(parsed_resume)
