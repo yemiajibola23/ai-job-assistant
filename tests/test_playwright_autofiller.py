@@ -124,3 +124,41 @@ def test_fill_form_fills_correct_field_based_on_label(mock_match_label_to_key):
     engine.fill_form(application_data, mock_page)
     
     mock_field.fill.assert_called_once_with("Test User")
+    
+@patch("backend.autofill.playwright_autofiller.match_label_to_key")    
+def test_fill_form_selects_radio_button(mock_match_label_to_key):
+    mock_radio = MagicMock()
+    mock_radio.get_attribute.side_effect = lambda attr: "radio" if attr == "type" else None
+    mock_radio.evaluate.return_value = "Yes"
+    
+    mock_page = MagicMock()
+    mock_page.query_selector_all.return_value = [mock_radio]
+    
+    engine = PlaywrightAutofiller("https://example.com/")
+    engine.extract_field_label = MagicMock(return_value="Yes")
+    mock_match_label_to_key.return_value = "work_authorization"
+    application_data = { "work_authorization": "Yes" }
+    
+    engine.fill_form(application_data, mock_page)
+    
+    mock_radio.check.assert_called_once()
+    
+@patch("backend.autofill.playwright_autofiller.match_label_to_key")       
+def test_fill_form_selects_dropdown(mocK_match_label_to_key):
+    mock_select = MagicMock()
+    mock_select.evaluate.side_effect = lambda script:("select" if "tagName" in script else "Work Eligibility")
+    mock_select.get_attribute.side_effect = lambda attr: None
+    mock_select.select_option = MagicMock()
+    
+    mock_page = MagicMock()
+    mock_page.query_selector_all.return_value = [mock_select]
+    
+    engine = PlaywrightAutofiller("https://example.com/")
+    engine.extract_field_label = MagicMock(return_value="Work Eligibility")
+    mocK_match_label_to_key.return_value = "work_eligibility"
+    application_data = {"work_eligibility": "US Citizen"}
+    
+    engine.fill_form(application_data, mock_page)
+    
+    mock_select.select_option.assert_called_once_with("US Citizen")
+    

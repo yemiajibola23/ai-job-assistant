@@ -34,7 +34,22 @@ class PlaywrightAutofiller:
             if not value:
                 print(f"[matcher] ⚠️ No resume value found for key: '{key}' (matched from '{label.strip()}')")
                 continue
-            field.fill(value)
+            
+            try:
+                input_type = field.get_attribute("type") or ""
+                tag_name = field.evaluate("el => el.tagName.toLowerCase()")
+            
+                if tag_name == "select":
+                    field.select_option(value)
+                elif input_type == "radio":
+                    radio_value = field.evaluate("el => el.value")
+                    if radio_value == value:
+                        field.check()
+                else:
+                    field.fill(value)
+            except Exception as e:
+                print(f"[autofill] ⚠️ Failed to handle field '{label.strip()}': {e}")
+                
                        
     def extract_field_label(self, field, page):
         try: 
