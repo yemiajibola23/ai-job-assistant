@@ -20,6 +20,7 @@ def test_fill_form_calls_playwright_methods(mock_sync_playwright):
     mock_field = MagicMock()
     
     mock_page.query_selector_all.return_value = [mock_field]
+    mock_page.query_selector.return_value = None
     mock_context.new_page.return_value = mock_page
     mock_browser.new_context.return_value = mock_context
 
@@ -112,7 +113,8 @@ def test_extract_field_labels_uses_fallbacks():
 def test_fill_form_fills_correct_field_based_on_label(mock_match_label_to_key):
     mock_field = MagicMock()
     mock_page = MagicMock()
-    mock_page.query_selector_all.return_value = [mock_field]
+    mock_page.query_selector.side_effect = [MagicMock(), None]
+    mock_page.query_selector_all.side_effect = [[mock_field], []]
     
     engine = PlaywrightAutofiller("https://example.com")
     engine.extract_field_label = MagicMock(return_value="Full Name")
@@ -132,7 +134,8 @@ def test_fill_form_selects_radio_button(mock_match_label_to_key):
     mock_radio.evaluate.return_value = "Yes"
     
     mock_page = MagicMock()
-    mock_page.query_selector_all.return_value = [mock_radio]
+    mock_page.query_selector.side_effect = [MagicMock(), None]
+    mock_page.query_selector_all.side_effect = [[mock_radio], []]
     
     engine = PlaywrightAutofiller("https://example.com/")
     engine.extract_field_label = MagicMock(return_value="Yes")
@@ -151,7 +154,8 @@ def test_fill_form_selects_dropdown(mocK_match_label_to_key):
     mock_select.select_option = MagicMock()
     
     mock_page = MagicMock()
-    mock_page.query_selector_all.return_value = [mock_select]
+    mock_page.query_selector.side_effect = [MagicMock(), None]
+    mock_page.query_selector_all.side_effect = [[mock_select], []]
     
     engine = PlaywrightAutofiller("https://example.com/")
     engine.extract_field_label = MagicMock(return_value="Work Eligibility")

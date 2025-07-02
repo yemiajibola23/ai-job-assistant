@@ -5,7 +5,28 @@ from typing import Optional, Any
 class PlaywrightAutofiller:
     def __init__(self, job_url: str):
         self.job_url = job_url
+        
+    def _fill_multistep_form(self, page: Any, application_data: dict) -> None:
+        max_steps = 5
+        for _ in range(max_steps):
+            self._fill_fields(page, application_data)
+            if not self._click_next_if_available(page):
+                break
 
+    def _click_next_if_available(self, page: Any) -> bool:
+        try:
+            next_button = page.query_selector("button:text('Next'), button:text('Continue'), button:text('→')")
+            
+            if next_button:
+                print("[multistep] ⏭ Clicking next/continue button")
+                next_button.click()
+                page.wait_for_timeout(10000)
+                return True
+        except Exception as e:
+            print(f"[multistep] ⚠️ Failed to click next: {e}")
+        
+        return False
+        
     def fill_form(self, application_data: dict, page: Optional[Any]=None) -> None:
         if page is None:
             with sync_playwright() as p:
@@ -13,10 +34,10 @@ class PlaywrightAutofiller:
                 context = browser.new_context()
                 page = context.new_page()
                 page.goto(self.job_url)
-                self._fill_fields(page, application_data)
+                self._fill_multistep_form(page, application_data)
         else:
             page.goto(self.job_url)
-            self._fill_fields(page, application_data)
+            self._fill_multistep_form(page, application_data)
             
     def _fill_fields(self, page: Any, application_data: dict) -> None:
         fields = page.query_selector_all("input, textarea")
