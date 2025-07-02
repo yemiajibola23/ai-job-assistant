@@ -166,3 +166,27 @@ def test_fill_form_selects_dropdown(mocK_match_label_to_key):
     
     mock_select.select_option.assert_called_once_with("US Citizen")
     
+    
+def test_click_next_if_available_clicks_button_and_returns_true():
+    mock_page = MagicMock()
+    mock_button = MagicMock()
+    mock_page.query_selector.return_value = mock_button
+
+    engine = PlaywrightAutofiller("https://example.com")
+
+    result = engine._click_next_if_available(mock_page)
+
+    mock_button.click.assert_called_once()
+    mock_page.wait_for_timeout.assert_called_once()
+    assert result is True
+    
+def test_click_next_if_available_returns_false_when_no_button():
+    mock_page = MagicMock()
+    mock_page.query_selector.return_value = None
+
+    engine = PlaywrightAutofiller("https://example.com")
+
+    result = engine._click_next_if_available(mock_page)
+
+    assert result is False
+
