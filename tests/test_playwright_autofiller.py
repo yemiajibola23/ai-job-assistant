@@ -1,5 +1,9 @@
-from unittest.mock import Mock, AsyncMock, MagicMock, patch 
+import pytest
+from unittest.mock import MagicMock, patch 
 from backend.autofill.playwright_autofiller import PlaywrightAutofiller
+import tempfile
+import os
+from playwright.sync_api import sync_playwright
 
 def mock_field_with_attributes(attr_map: dict):
     def get_attr_side_effect(attr_name):
@@ -190,3 +194,36 @@ def test_click_next_if_available_returns_false_when_no_button():
 
     assert result is False
 
+def test_fill_form_uploads_resume():
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context = browser.new_context()
+        mock_page = context.new_page()
+        
+        mock_page.set_content("""
+            <html>
+                <body>
+                    <form>
+                        <label for="resume">Upload Resume</label>
+                        <input type="file" id="resume" name="resume">
+                    </form>
+                </body>
+            </html>
+        """)
+    
+        with patch("backend.autofill.playwright_autofiller.match_label_to_key") as mock_match:
+            mock_match.return_value = "resume"
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                tmp.write(b"%PDF-1.4 mock resume")
+                resume_path = tmp.name
+        
+            engine = PlaywrightAutofiller("https://example.com/")
+            engine.fill_form({"resume": resume_path}, mock_page)
+        
+            input_handle = mock_page.query_selector("input[type='file']")
+            assert input_handle is not None, "File input not found"
+        
+            file_name = input_handle.evaluate("(el) => el.files[0].name")
+            assert file_name.endswith(".pdf")
+        
+            os.remove(resume_path)

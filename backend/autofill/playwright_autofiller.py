@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 from backend.autofill.field_matcher import match_label_to_key
 from typing import Optional, Any
-
+import os
 class PlaywrightAutofiller:
     def __init__(self, job_url: str):
         self.job_url = job_url
@@ -36,7 +36,7 @@ class PlaywrightAutofiller:
                 page.goto(self.job_url)
                 self._fill_multistep_form(page, application_data)
         else:
-            page.goto(self.job_url)
+            # page.goto(self.job_url)
             self._fill_multistep_form(page, application_data)
             
     def _fill_fields(self, page: Any, application_data: dict) -> None:
@@ -66,6 +66,12 @@ class PlaywrightAutofiller:
                     radio_value = field.evaluate("el => el.value")
                     if radio_value == value:
                         field.check()
+                elif input_type == "file":
+                    if not os.path.isfile(value):
+                        print(f"[autofill] ❌ File not found: {value}")
+                        continue
+                    
+                    field.set_input_files(value)
                 else:
                     field.fill(value)
             except Exception as e:
@@ -89,3 +95,11 @@ class PlaywrightAutofiller:
             return field.evaluate("node => node.parentElement?.innerText")
         except Exception as e:
             print(e) # TODO - Replace with proper logging.
+    
+    def get_label_for_input(self, page, input_elem):
+        input_id = input_elem.get_attribute("id")
+        if input_id:
+            label = page.query_selector(f"label[for='{input_id}']")
+            if label:
+                return label.inner_text().strip()
+        
