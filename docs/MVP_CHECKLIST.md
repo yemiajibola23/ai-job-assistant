@@ -34,7 +34,7 @@
 
 - [x] Text input fields autofilled
 - [x] Radio, dropdowns, and multistep flows handled
-- [ ] Resume + cover letter upload
+- [x] Resume + cover letter upload
 - [ ] Essay prompts sent to GPT and filled
 - [x] Field matching (rule + fuzzy + GPT)
 - [ ] Final confirmation of submission
