@@ -33,7 +33,7 @@
 ### 🤖 autofill
 
 - [x] Text input fields autofilled
-- [ ] Radio, dropdowns, and multistep flows handled
+- [x] Radio, dropdowns, and multistep flows handled
 - [ ] Resume + cover letter upload
 - [ ] Essay prompts sent to GPT and filled
 - [x] Field matching (rule + fuzzy + GPT)
