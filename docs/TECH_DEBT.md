@@ -63,3 +63,13 @@
   - Estimated Time: 2–3 hrs
   - Priority: High (affects autofill correctness)
   - Tags: `autofill`, `form-intent`, `field-types`
+
+  - [ ] 🧠 **Add confidence bands to embedding-based matcher**
+  - Enhance `FieldMatcher.match()` to return both match key and similarity score
+  - Categorize results into confidence levels (`high`, `medium`, `low`)
+  - Allow downstream logic (e.g. autofill) to vary behavior based on confidence
+  - Log or flag low-confidence matches for review or active learning
+  - Consider future UI: display warnings or allow manual override when confidence is low
+  - Estimated Time: 1.5–2 hrs
+  - Priority: Medium – improves matching safety, debugging, and user feedback
+  - Tags: `matching`, `AI`, `autofill`, `refactor`, `future`
