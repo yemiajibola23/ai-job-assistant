@@ -1,5 +1,5 @@
 from pathlib import Path
-from backend.generation.openai_client import get_openai_response
+from generation.client.openai_client import get_openai_response
 from backend.generation.prompts import SUMMARY_PROMPT, BULLETS_PROMPT
 import re
 

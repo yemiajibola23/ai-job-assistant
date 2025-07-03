@@ -1,4 +1,4 @@
-from backend.generation.openai_client import client
+from generation.client.openai_client import client
 import json
 from openai.types.shared_params import FunctionDefinition
 from json import JSONDecodeError

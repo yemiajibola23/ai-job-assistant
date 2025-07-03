@@ -28,3 +28,12 @@ def get_openai_response(prompt: str) -> str:
         raise ValueError("OpenAI response was empty or malformed")
 
     return content.strip()
+
+
+
+class OpenAIClient:
+    def __init__(self, model="gpt-4"):
+        self.model = model
+        
+    def generate(self, prompt: str) -> str:
+        raise NotImplementedError("Integrate OpenAI call here")

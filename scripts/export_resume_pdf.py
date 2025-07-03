@@ -1,9 +1,6 @@
 from backend.generation.resume import generate_full_tailored_resume
 from backend.generation.export import convert_markdown_to_pdf
 
-
-
-
 def main():
     # existing logic here
     resume_data = {
