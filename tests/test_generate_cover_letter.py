@@ -1,25 +1,45 @@
+import pytest
+from unittest.mock import MagicMock, patch
+from jinja2 import Environment, FileSystemLoader
+from backend.generation.generators.cover_letter_generator import CoverLetterGenerator
 import os
-from dotenv import load_dotenv
-from backend.generation.generate_cover_letter import generate_cover_letter
-from backend.generation.cover_letter_saver import save_cover_letter
-load_dotenv()
 
-resume_summary = """
-Senior iOS Developer with 6+ years of experience building scalable, user-centric apps using Swift and SwiftUI. Led performance optimizations and modularization at companies like Groupon, Ford, and WillowTree (NBA App).
-"""
+@pytest.fixture
+def jinja_env():
+    template_path = os.path.join("backend", "generation", "templates", "jinja_templates")
+    return Environment(loader=FileSystemLoader(template_path))
 
-job_description = """
-We’re hiring a Mobile Engineer to join our team at Flock Safety. You’ll build new features in our iOS app using Swift, collaborate cross-functionally, and help us scale our engineering practices.
-"""
-
-user_notes = "Highlight experience with the NBA app and collaborative team environments."
-
-if __name__ == "__main__":
-    cover_letter = generate_cover_letter(resume_summary, job_description, user_notes)
-    print("\n📄 Generated Cover Letter:\n")
-    print(cover_letter)
+def test_jinja_success_path(jinja_env):
+    gpt_mock = MagicMock()
+    generator = CoverLetterGenerator(jinja_env, gpt_mock)
     
-    # Save it to a file
-    path = save_cover_letter(cover_letter, job_title="Mobile Engineer", company="Flock Safety")
-    print(f"\n✅ Cover letter saved to: {path}")
+    data = {
+        "hiring_manager": "Jane Doe",
+        "job_title": "Backend Engineer",
+        "company_name": "OpenAI",
+        "skills": "Python, distributed systems, async processing, REST APIs, container orchestration, cloud deployments, system design",
+        "custom_paragraph": "I'm especially drawn to your mission.",
+        "applicant_name": "Yemi Ajibola"
+    }
+    
+    with patch.object(generator, "_is_sufficient", return_value=True):
+        result = generator.generate(data)
+    
+    assert "Dear Jane Doe" in result
+    assert "Backend Engineer" in result
+    gpt_mock.assert_not_called()
+    
+def test_gpt_fallback_path(jinja_env):
+    gpt_mock = MagicMock()
+    gpt_mock.generate.return_value = "GPT-generated cover letter"
 
+    generator = CoverLetterGenerator(jinja_env, gpt_mock)
+    data = {
+        "company_name": "OpenAI"  # intentionally sparse
+    }
+
+    with patch.object(generator, "_is_sufficient", return_value=False):
+        result = generator.generate(data)
+
+    assert result == "GPT-generated cover letter"
+    gpt_mock.generate.assert_called_once()
