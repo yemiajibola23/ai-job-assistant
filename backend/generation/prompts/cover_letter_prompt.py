@@ -1,3 +1,5 @@
+from backend.generation.client.openai_client import get_openai_response
+
 COVER_LETTER_PROMPT = """You are an expert career coach and professional writer. Given a resume and a job description, your task is to generate a tailored, compelling, and concise cover letter. The tone should be professional but warm, and show genuine interest in the company.
 
     ### Job Description:
@@ -20,5 +22,9 @@ COVER_LETTER_PROMPT = """You are an expert career coach and professional writer.
     """
 
 def get_cover_letter_prompt(data: dict) -> str:
-    # Fill in with prompt generation logic if Jinja fallback fails
-    return f"Write a cover letter for {data.get('job_title', 'a job')}"
+    return COVER_LETTER_PROMPT.format(
+        job_description=data.get("job_description", ""),
+        resume_summary=data.get("summary", ""),
+        user_notes=data.get("notes", "N/A")
+    )
+

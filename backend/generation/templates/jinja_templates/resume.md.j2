@@ -1,0 +1,33 @@
+# {{ name }}
+
+📧 {{ email }}  
+📞 {{ phone }}
+
+---
+
+## Summary  
+{{ summary }}
+
+---
+
+## Experience
+{% for job in experience %}
+### {{ job.company }}
+
+{% for bullet in job.bullets %}
+- {{ bullet }}
+{% endfor %}
+
+{% endfor %}
+
+---
+
+## Skills  
+{{ skills | join(", ") }}
+
+---
+
+## Education
+{% for degree in education %}
+- {{ degree }}
+{% endfor %}
