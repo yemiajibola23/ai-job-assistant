@@ -1,5 +1,6 @@
-from backend.generation.resume import generate_full_tailored_resume
-from backend.generation.export import convert_markdown_to_pdf
+from backend.generation.generators.resume_generator import get_resume_prompt
+from backend.generation.export.pdf_exporter import convert_markdown_to_pdf
+from backend.generation.prompts.tailored_resume_prompt import generate_full_tailored_resume
 
 def main():
     # existing logic here

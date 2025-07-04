@@ -3,11 +3,17 @@ from backend.autofill.field_matcher import match_label_to_key
 from typing import Optional, Any
 import os
 from backend.utils.logging import get_logger
+from backend.generation.export.tailored_resume_exporter import generate_and_render_tailored_resume
+from pathlib import Path
 
 logger = get_logger(__name__)
 class PlaywrightAutofiller:
-    def __init__(self, job_url: str):
+    def __init__(self, job_url: str, job_id: str, job_description: str, resume_data: dict):
         self.job_url = job_url
+        self.job_id = job_id
+        self.job_description = job_description
+        self.resume_data = resume_data
+        self.uploaded_resume_path: Optional[Path] = None
         
     def _fill_multistep_form(self, page: Any, application_data: dict) -> None:
         max_steps = 5
@@ -30,7 +36,7 @@ class PlaywrightAutofiller:
         
         return False
         
-    def fill_form(self, application_data: dict, page: Optional[Any]=None) -> None:
+    def fill_form(self, application_data: dict, page: Optional[Any]=None) -> dict:
         if page is None:
             with sync_playwright() as p:
                 browser = p.chromium.launch()
@@ -41,6 +47,11 @@ class PlaywrightAutofiller:
         else:
             # page.goto(self.job_url)
             self._fill_multistep_form(page, application_data)
+        
+        return {
+            "status": "submitted",
+            "resume_used": str(self.uploaded_resume_path)
+        }
             
     def _fill_fields(self, page: Any, application_data: dict) -> None:
         fields = page.query_selector_all("input, textarea")
@@ -71,6 +82,8 @@ class PlaywrightAutofiller:
                         field.check()
                         logger.debug(f"[autofill] ✅ Checked radio for '{label.strip()}' as '{key}'")
                 elif input_type == "file":
+                    if "resume" == label.lower():
+                        self.uploaded_resume_path = generate_and_render_tailored_resume(job_id=self.job_id, resume_data=self.resume_data, job_description=self.job_description)
                     if not os.path.isfile(value):
                         logger.warning(f"[autofill] ❌ File not found: {value}")
                         continue
@@ -101,11 +114,3 @@ class PlaywrightAutofiller:
             return field.evaluate("node => node.parentElement?.innerText") or ""
         except Exception as e:
             logger.error(e)
-    
-    def get_label_for_input(self, page, input_elem):
-        input_id = input_elem.get_attribute("id")
-        if input_id:
-            label = page.query_selector(f"label[for='{input_id}']")
-            if label:
-                return label.inner_text().strip()
-        
