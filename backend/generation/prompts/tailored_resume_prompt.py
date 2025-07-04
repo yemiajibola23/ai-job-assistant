@@ -49,6 +49,30 @@ Target Job Description:
 Rewritten Summary:
 """
 
+def generate_tailored_summary(base_summary: str, job_description: str) -> str:
+    prompt = SUMMARY_PROMPT.format(
+        base_summary=base_summary.strip(),
+        job_description=job_description.strip()
+    )
+    
+    return get_openai_response(prompt)
+
+def generate_tailored_bullets(experience_bullets: list[str], job_description: str) -> list[str]:
+    formatted_bullets = "\n".join(experience_bullets)
+
+    prompt = BULLETS_PROMPT.format(
+        original_bullets=formatted_bullets,
+        job_description=job_description.strip()
+    )
+
+    response = get_openai_response(prompt)
+    raw_bullets = response.split("\n")
+
+    # Strip leading numbering like "1. ", "2. ", etc.
+    clean_bullets = [re.sub(r"^\s*\d+\.\s*", "", b).strip() for b in raw_bullets if b.strip()]
+
+    return clean_bullets
+
 def tailor_resume_data(data: dict, job_description: str) -> dict:
     tailored = data.copy()
     
@@ -113,45 +137,27 @@ def generate_full_tailored_resume(job_id: str, resume_data: dict, job_descriptio
     return str(output_path)
 
 
-def generate_tailored_summary(base_summary: str, job_description: str) -> str:
-    prompt = SUMMARY_PROMPT.format(
-        base_summary=base_summary.strip(),
-        job_description=job_description.strip()
-    )
-    
-    return get_openai_response(prompt)
-
-def generate_tailored_bullets(experience_bullets: list[str], job_description: str) -> list[str]:
-    formatted_bullets = "\n".join(experience_bullets)
-
-    prompt = BULLETS_PROMPT.format(
-        original_bullets=formatted_bullets,
-        job_description=job_description.strip()
-    )
-
-    response = get_openai_response(prompt)
-    raw_bullets = response.split("\n")
-
-    # Strip leading numbering like "1. ", "2. ", etc.
-    clean_bullets = [re.sub(r"^\s*\d+\.\s*", "", b).strip() for b in raw_bullets if b.strip()]
-
-    return clean_bullets
-
-
 def get_resume_prompt(data: dict) -> str:
     summary = data.get("summary", "")
     experience = data.get("experience", [])
     skills = data.get("skills", [])
-    
+    education = data.get("education", [])
+    linkedin = data.get("linkedin", None)
+
+    # Flatten and format experience bullets
     bullets = []
     for job in experience:
         bullets.extend(job.get("bullets", []))
-    bullet_block = "\n".join([f" - {b}" for b in bullets])
-    
+    bullet_block = "\n".join([f"- {b}" for b in bullets])
+
+    # Format education section
+    education_block = "\n".join([f"- {degree}" for degree in education])
+
     return f"""
 # {data.get('name', '')}
 Email: {data.get('email', '')}
 Phone: {data.get('phone', '')}
+{f'LinkedIn: {linkedin}' if linkedin else ''}
 
 ## Summary
 {summary}
@@ -160,5 +166,8 @@ Phone: {data.get('phone', '')}
 {bullet_block}
 
 ## Skills
-{skills}
+{', '.join(skills)}
+
+## Education
+{education_block}
 """.strip()
