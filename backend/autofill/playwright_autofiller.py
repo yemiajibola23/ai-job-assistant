@@ -8,12 +8,10 @@ from pathlib import Path
 
 logger = get_logger(__name__)
 class PlaywrightAutofiller:
-    def __init__(self, job_url: str, job_id: str, job_description: str, resume_data: dict):
+    def __init__(self, job_url: str):
         self.job_url = job_url
-        self.job_id = job_id
-        self.job_description = job_description
-        self.resume_data = resume_data
         self.uploaded_resume_path: Optional[Path] = None
+        self.uploaded_cover_letter_path: Optional[Path] = None
         
     def _fill_multistep_form(self, page: Any, application_data: dict) -> None:
         max_steps = 5
@@ -82,14 +80,17 @@ class PlaywrightAutofiller:
                         field.check()
                         logger.debug(f"[autofill] ✅ Checked radio for '{label.strip()}' as '{key}'")
                 elif input_type == "file":
-                    if "resume" == label.lower():
-                        self.uploaded_resume_path = generate_and_render_tailored_resume(job_id=self.job_id, resume_data=self.resume_data, job_description=self.job_description)
                     if not os.path.isfile(value):
                         logger.warning(f"[autofill] ❌ File not found: {value}")
                         continue
-                    
                     field.set_input_files(value)
                     logger.debug(f"[autofill] ✅ Uploaded file for '{label.strip()}' as '{key}'")
+                    
+                    if "resume" in label.lower():
+                        self.uploaded_resume_path = value
+                    elif "cover" in label.lower():
+                        self.uploaded_cover_letter_path = value
+                        
                 else:
                     field.fill(value)
                     logger.debug(f"[autofill] ✅ Filled '{label.strip()}' as '{key}' with type '{input_type or tag_name}'")

@@ -1,0 +1,58 @@
+
+from backend.generation.export.tailored_resume_exporter import generate_and_render_tailored_resume
+from backend.generation.export.tailored_cover_letter_exporter import generate_and_render_tailored_cover_letter
+from backend.db.application_dao import add_application
+from backend.db.connection import get_connection
+from backend.autofill.playwright_autofiller import PlaywrightAutofiller
+import json
+from pathlib import Path
+
+def load_user_profile():
+    path = Path("scripts/data/user_profile.json")
+    if not path.exists():
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def apply_to_job(job: dict, resume_data: dict):
+    job_id = job["id"]
+    job_url = job["url"]
+    job_description = job["description"]
+    
+    
+    # Step 1: Generate assets
+    resume_path = generate_and_render_tailored_resume(job_id=job_id, resume_data=resume_data, job_description=job_description)
+    cover_letter_path = generate_and_render_tailored_cover_letter(job_id=job_id, resume_data=resume_data, job_description=job_description)
+    
+    # Step 2: Run the autofiller
+    profile_data = load_user_profile()
+    application_data = {
+    **profile_data,
+    "first_name": profile_data.get("name", "").split()[0],
+    "last_name": profile_data.get("name", "").split()[-1],
+    "email": profile_data.get("email"),
+    "phone": profile_data.get("phone"),
+    "resume": str(resume_path),
+    "cover_letter": str(cover_letter_path)
+}
+    autofiller = PlaywrightAutofiller(job_url)
+    autofill_result = autofiller.fill_form(application_data)
+    
+    conn = get_connection()
+    app_dict = {
+        "job_id": job_id,
+        "job_title": job.get("title"),
+        "company_name": job.get("company"),
+        "location": job.get("location", ""),
+        "tailored_resume_path": str(resume_path),
+        "tailored_cover_letter_path": str(cover_letter_path),
+        "status": "Applied"
+    }
+    
+    add_application(conn, app_dict)
+    
+    
+    print(f"✅ Applied to {job['title']} at {job['company']}")
+    print(f"📝 Resume: {resume_path}")
+    print(f"💌 Cover Letter: {cover_letter_path}")
+    print(f"🔗 Job URL: {job_url}")

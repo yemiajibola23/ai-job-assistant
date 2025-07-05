@@ -17,7 +17,6 @@
   - Priority: Medium – not blocking current flow but valuable for production
   - Tags: `nlp`, `job parsing`, `title extraction`, `ml-upgrade`
 
-- [ ] Refactor app_db.py to support full dependency injection and testability for all functions (not just update_application_status_and_notes)
 - [ ] Move `RESUME_FIELD_MAP` from `autofill.py` to `constants.py` for reuse across modules
 - [ ] Log unmapped `resume_field` keys returned by GPT in `call_gpt_function` for visibility and debugging
 - [ ] Add fallback handling for GPT fields not present in resume (e.g. cover letter text or derived summary)
@@ -63,13 +62,3 @@
   - Estimated Time: 2–3 hrs
   - Priority: High (affects autofill correctness)
   - Tags: `autofill`, `form-intent`, `field-types`
-
-  - [ ] 🧠 **Add confidence bands to embedding-based matcher**
-  - Enhance `FieldMatcher.match()` to return both match key and similarity score
-  - Categorize results into confidence levels (`high`, `medium`, `low`)
-  - Allow downstream logic (e.g. autofill) to vary behavior based on confidence
-  - Log or flag low-confidence matches for review or active learning
-  - Consider future UI: display warnings or allow manual override when confidence is low
-  - Estimated Time: 1.5–2 hrs
-  - Priority: Medium – improves matching safety, debugging, and user feedback
-  - Tags: `matching`, `AI`, `autofill`, `refactor`, `future`

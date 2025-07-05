@@ -27,29 +27,3 @@ def fetch_and_score_jobs(query_dict: dict, resume_path: str) -> list[dict]:
         job["score"] = round(desc_to_score.get(job["description"], 0.0), 3)
 
     return jobs
-
-
-def filter_and_match_jobs(jobs: list[dict], resume_text: str, threshold: float = DEFAULT_SCORE_THRESHOLD) -> list[dict]:
-    """
-    Filters job list by computing score and applying a similarity threshold.
-
-    Returns:
-        List of matched jobs (above threshold), each with a 'score' field.
-    """
-    descriptions = [job["description"] for job in jobs]
-    ranked_scores = match_resume_to_jobs(resume_text, descriptions)
-
-    desc_to_score = dict(ranked_scores)
-    matched_jobs = []
-
-    for job in jobs:
-        score = desc_to_score.get(job["description"], 0.0)
-        job["score"] = round(score, 3)
-        if score >= threshold:
-            job["matched"] = True
-            matched_jobs.append(job)
-        else:
-            job["matched"] = False
-            job["rejection_reason"] = "score below threshold"
-
-    return matched_jobs
