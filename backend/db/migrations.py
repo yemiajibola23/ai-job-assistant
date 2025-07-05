@@ -42,6 +42,19 @@ def add_tailored_resume_fields(cursor):
         cursor.execute("""
             ALTER TABLE applications ADD COLUMN tailored_resume_created_at TEXT DEFAULT (datetime('now'))
         """)
+        
+    # 🆕 Add tailored cover letter support
+    if "tailored_cover_letter_created_at" not in columns:
+        print("🔧 Adding 'tailored_cover_letter_created_at' column...")
+        cursor.execute("""
+            ALTER TABLE applications ADD COLUMN tailored_cover_letter_created_at TEXT
+        """)
+    # Optional backfill
+        cursor.execute("""
+            UPDATE applications
+            SET tailored_cover_letter_created_at = datetime('now')
+            WHERE tailored_cover_letter_created_at IS NULL
+        """)
 
 if __name__ == "__main__":
     run_migrations()
