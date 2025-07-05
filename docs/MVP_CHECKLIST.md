@@ -42,6 +42,15 @@
 - [ ] Autofill result logging
 - [ ] Tests with mock forms or headless Playwright
 
+#### 🔄 ATS-Specific Autofillers (Greenhouse First)
+- [ ] Create `BaseAutofiller` class with shared interface
+- [ ] Build `GreenhouseAutofiller` with multistep + upload logic
+- [ ] Implement `autofill_router.py` to select autofiller based on URL
+- [ ] Refactor current Playwright logic to delegate to selected autofiller
+- [ ] Write unit tests for `GreenhouseAutofiller` using mock Playwright page
+- [ ] Log ATS name + autofill strategy used (for future debugging)
+- [ ] Add placeholder files for Lever, Ashby with `NotImplementedError`
+
 ---
 
 ### 🗃️ db
