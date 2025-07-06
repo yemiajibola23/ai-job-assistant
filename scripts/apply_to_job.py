@@ -6,6 +6,7 @@ from backend.db.connection import get_connection
 from backend.autofill.playwright_autofiller import PlaywrightAutofiller
 import json
 from pathlib import Path
+import sqlite3
 
 def load_user_profile():
     path = Path("scripts/data/user_profile.json")
@@ -14,8 +15,8 @@ def load_user_profile():
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def apply_to_job(job: dict, resume_data: dict):
-    job_id = job.get("id")
+def apply_to_job(job: dict, resume_data: dict, conn: sqlite3.Connection):
+    job_id = job.get("job_id")
     if not job_id:
         raise ValueError("Missing job ID")
     job_url = job["url"]
@@ -40,7 +41,6 @@ def apply_to_job(job: dict, resume_data: dict):
     autofiller = PlaywrightAutofiller(job_url)
     autofill_result = autofiller.fill_form(application_data)
     
-    conn = get_connection()
     app_dict = {
         "job_id": job_id,
         "job_title": job.get("title", "Unknown Title"),

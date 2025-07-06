@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import torch
 from backend.ranking.embedder import embed_texts
+from typing import Tuple
 
 def filter_jobs(jobs: List[Dict], resume_embedding: np.ndarray, top_n: int = 5) -> List[Dict]:
     """
@@ -40,8 +41,18 @@ def filter_jobs(jobs: List[Dict], resume_embedding: np.ndarray, top_n: int = 5) 
     return sorted(scored_jobs, key=lambda x: x["score"], reverse=True)[:top_n]
 
 
+def score_jobs(jobs: List[dict], resume_text: str) -> List[dict]:
+    descriptions = [job["description"] for job in jobs]
+    ranked_scores = _match_resume_to_jobs(resume_text, descriptions)
 
-def match_resume_to_jobs(resume_text, job_descriptions, top_k=None):
+    # Attach scores to job entries
+    desc_to_score = dict(ranked_scores)
+    for job in jobs:
+        job["score"] = round(desc_to_score.get(job["description"], 0.0), 3)
+
+    return jobs
+
+def _match_resume_to_jobs(resume_text, job_descriptions, top_k=None) -> List[Tuple[str, float]]:
      """
     Match resume text to job descriptions using semantic similarity.
 

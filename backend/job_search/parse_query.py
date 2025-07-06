@@ -24,3 +24,7 @@ def parse_query(query: str) -> dict:
         "work_type": work_type,
         "level": level,
     }
+    
+def build_query_string(job_title, location=None, work_type=None, level=None):
+    parts = [level, job_title, work_type, location]
+    return " ".join([p.strip() for p in parts if p])

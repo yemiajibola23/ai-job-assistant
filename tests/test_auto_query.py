@@ -1,5 +1,5 @@
 import pytest
-from backend.job_search.auto_query import run_auto_query
+from scripts.auto_query import run_auto_query
 from backend.utils.constants import TEST_RESUME_PATH
 from pathlib import Path
 from backend.db.connection import get_connection
