@@ -14,10 +14,7 @@ MINIMAL_RESUME_DATA = {
 
 def make_test_autofiller(**kwargs):
     return PlaywrightAutofiller(
-        job_url=kwargs.get("job_url", "https://example.com/"),
-        job_id=kwargs.get("job_id", "test-job"),
-        job_description=kwargs.get("job_description", "fake job desc"),
-        resume_data=kwargs.get("resume_data", MINIMAL_RESUME_DATA)
+        job_url=kwargs.get("job_url", "https://example.com/")
     )
 
 def mock_field_with_attributes(attr_map: dict):
@@ -193,6 +190,37 @@ def test_fill_form_selects_dropdown(mocK_match_label_to_key):
     mock_select.select_option.assert_called_once_with("US Citizen")
     
     
+@patch("backend.autofill.playwright_autofiller.PlaywrightAutofiller.extract_field_label")
+@patch("backend.autofill.playwright_autofiller.PlaywrightAutofiller.generate_essay_response")
+@patch("backend.autofill.playwright_autofiller.match_label_to_key")
+def test_fill_fields_essay_prompt_generates_and_fills_textarea(mock_match_label_to_key, mock_generate_essay, mock_extract_label):
+    mock_field = MagicMock()
+    mock_field.get_attribute.side_effect = lambda attr: {
+        "maxlength": "500",
+        "type": None
+    }.get(attr, None)
+    
+    mock_field.evaluate.side_effect = lambda js: {
+        "el => el.tagName.toLowerCase()": "textarea",
+        "el => el.value": None
+    }.get(js, None)
+    
+    mock_match_label_to_key.return_value = "why_you_want"
+    mock_extract_label.return_value = "Why do you want to work for Flock Safety?"
+    mock_generate_essay.return_value = "I want to work for Flock Safety because I have a passion for public safety."
+
+    mock_page = MagicMock()
+    mock_page.query_selector_all.return_value = [mock_field]
+    
+    engine = make_test_autofiller()
+    engine._fill_multistep_form = lambda page, application_data, result_log: engine._fill_fields(page, application_data, result_log)
+    
+    results = engine.fill_form({"why_you_want": "placeholder"}, mock_page)
+    
+    mock_field.fill.assert_called_once_with("I want to work for Flock Safety because I have a passion for public safety.")
+    assert any("essay" in item for item in results.get("filled_fields", []))
+    
+    
 def test_click_next_if_available_clicks_button_and_returns_true():
     mock_page = MagicMock()
     mock_button = MagicMock()
@@ -252,3 +280,4 @@ def test_fill_form_uploads_resume(mock_generate_resume):
             assert file_name.endswith(".pdf")
         
             os.remove(resume_path)
+                    

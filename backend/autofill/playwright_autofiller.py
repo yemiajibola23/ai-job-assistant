@@ -118,7 +118,14 @@ class PlaywrightAutofiller:
                         self.uploaded_resume_path = value
                     elif "cover" in label.lower():
                         self.uploaded_cover_letter_path = value
-                        
+                elif tag_name == "textarea" and self._is_essay_field(field):
+                    essay_prompt = self.generate_essay_response(label, application_data)
+                    if essay_prompt:
+                        field.fill(essay_prompt)
+                        result_log["filled_fields"].append(f"essay: {key}")
+                    else:
+                        result_log["skipped_fields"].append(f"essay-failed: {key}")
+                    continue
                 else:
                     field.fill(value)
                     logger.debug(f"[autofill] ✅ Filled '{label.strip()}' as '{key}' with type '{input_type or tag_name}'")
@@ -146,3 +153,22 @@ class PlaywrightAutofiller:
             return field.evaluate("node => node.parentElement?.innerText") or ""
         except Exception as e:
             logger.error(e)
+    
+    
+    def _is_essay_field(self, field) -> bool:
+        try:
+            maxlength = field.get_attribute("maxlength")
+            rows = field.get_attribute("rows")
+            cols = field.get_attribute("cols")
+            
+            return (
+                (maxlength and int(maxlength) >= 200) or
+                (rows and int(rows) >= 4) or 
+                (cols and int(cols) >= 40)
+            )
+        except Exception as e:
+            logger.warning(f"[essay-check] Failed to evaluate textarea heuristics: {e}")
+            return False
+            
+    def generate_essay_response(self, label, appplication_data) -> Optional[str]:
+        return ""

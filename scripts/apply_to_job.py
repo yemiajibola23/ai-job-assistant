@@ -16,7 +16,7 @@ def load_user_profile():
         return json.load(f)
 
 def apply_to_job(job: dict, resume_data: dict, conn: sqlite3.Connection):
-    job_id = job.get("job_id")
+    job_id = job.get("id")
     if not job_id:
         raise ValueError("Missing job ID")
     job_url = job["url"]
