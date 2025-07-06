@@ -35,7 +35,7 @@
 - [x] Text input fields autofilled
 - [x] Radio, dropdowns, and multistep flows handled
 - [x] Resume + cover letter upload
-- [ ] Essay prompts sent to GPT and filled
+- [x] Essay prompts sent to GPT and filled
 - [x] Field matching (rule + fuzzy + GPT)
 - [x] Final confirmation of submission
 - [ ] Batch autofill / CLI entry

@@ -1,7 +1,6 @@
-import pytest
 from unittest.mock import patch
 from pathlib import Path
-import backend.generation.resume as resume_module
+from backend.generation.generators.resume_generator import ResumeGenerator
 
 def test_generate_full_tailored_resume_creates_markdown(tmp_path):
     job_description = "Looking for an iOS engineer with Swift, SwiftUI, and MVVM experience."
@@ -16,16 +15,18 @@ def test_generate_full_tailored_resume_creates_markdown(tmp_path):
         ]
     }
 
-    with patch.object(resume_module, "generate_tailored_summary", return_value="Tailored summary"), \
-         patch.object(resume_module, "generate_tailored_bullets", return_value=["Bullet A", "Bullet B"]):
+    mock_env = None  # Or use a dummy Jinja env if needed
+    mock_client = type("MockClient", (), {"generate": lambda self, p: "Tailored summary" if "summary" in p else "1. Bullet A\n2. Bullet B"})()
 
-        output_path = resume_module.generate_full_tailored_resume("ios123", resume_data, job_description)
+    generator = ResumeGenerator(jinja_env=mock_env, gpt_client=mock_client)
 
-        # Ensure the file exists
-        assert Path(output_path).exists()
+    output_path = generator.generate_full_tailored_resume("ios123", resume_data, job_description)
 
-        # Check content
-        content = Path(output_path).read_text()
-        assert "Tailored summary" in content
-        assert "- Bullet A" in content
-        assert "Swift, SwiftUI, Xcode" in content
+    # Ensure the file exists
+    assert Path(output_path).exists()
+
+    # Check content
+    content = Path(output_path).read_text()
+    assert "Tailored summary" in content
+    assert "- Bullet A" in content
+    assert "Swift, SwiftUI, Xcode" in content
