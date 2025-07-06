@@ -1,4 +1,3 @@
-from backend.generation.client.openai_client import get_openai_response
 
 COVER_LETTER_PROMPT = """You are an expert career coach and professional writer. Given a resume and a job description, your task is to generate a tailored, compelling, and concise cover letter. The tone should be professional but warm, and show genuine interest in the company.
 

@@ -5,7 +5,6 @@ from backend.generation.generators.resume_generator import ResumeGenerator
 import os
 import logging
 from jinja2.exceptions import TemplateError
-from backend.generation.prompts.tailored_resume_prompt import tailor_resume_data
 
 def test_generate_uses_jinja_if_successful():
     mock_template = MagicMock()
@@ -27,6 +26,7 @@ def test_generate_uses_jinja_if_successful():
 def test_generate_falls_back_on_gpt_on_jinja_failure():
     mock_template = MagicMock()
     mock_template.render.side_effect = TemplateError("Simulated render failure")
+    
     mock_jinja_env = MagicMock()
     mock_jinja_env.get_template.return_value = mock_template
     
@@ -45,6 +45,9 @@ def test_generate_falls_back_on_gpt_on_jinja_failure():
 def test_tailor_resume_data(mock_tailored_summary, mock_tailored_bullets):
     mock_tailored_summary.return_value = "Really good at iOS Development"
     mock_tailored_bullets.return_value = ["Bullet1", "Bullet2", "Bullet3", "Bullet4"]
+        
+    mock_jinja_env = MagicMock()
+    gpt_mock = MagicMock()
 
     input_data = {
         "summary": "Old summary",
@@ -55,8 +58,10 @@ def test_tailor_resume_data(mock_tailored_summary, mock_tailored_bullets):
         "education": ["BS in CS"],
         "skills": ["Swift"]
     }
+    
+    generator = ResumeGenerator(mock_jinja_env, gpt_mock)
 
-    result = tailor_resume_data(input_data, job_description="iOS job")
+    result = generator.tailor_resume_data(input_data, job_description="iOS job")
 
     assert result["summary"] == "Really good at iOS Development"
     

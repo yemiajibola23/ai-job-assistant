@@ -1,10 +1,10 @@
 from backend.generation.generators.cover_letter_generator import CoverLetterGenerator
 from backend.generation.client.openai_client import OpenAIClient
 from backend.generation.export.pdf_exporter import convert_markdown_to_pdf
-from backend.generation.templates.jinja_env import env
+from backend.generation.templates.jinja_env import get_jinja_env
 
 def main():
-    generator = CoverLetterGenerator(jinja_env=env, gpt_client=OpenAIClient())
+    generator = CoverLetterGenerator(jinja_env=get_jinja_env(), gpt_client=OpenAIClient())
 
     data = {
         "hiring_manager": "Jane Doe",

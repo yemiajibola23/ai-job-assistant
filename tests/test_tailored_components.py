@@ -1,8 +1,14 @@
 
 import pytest
-from backend.generation.resume import generate_tailored_summary, generate_tailored_bullets
+from backend.generation.generators.resume_generator import ResumeGenerator
+from unittest.mock import MagicMock
 
 def test_generate_tailored_summary_returns_rewritten_text():
+    
+    mock_jinja_env = MagicMock()
+    gpt_mock = MagicMock()
+    resume_generator = ResumeGenerator(mock_jinja_env, gpt_mock)
+    
     # Arrange
     base_summary = (
         "Experienced software engineer with a background in mobile and web development. "
@@ -16,7 +22,7 @@ def test_generate_tailored_summary_returns_rewritten_text():
     )
 
     # Act
-    result = generate_tailored_summary(base_summary, job_description)
+    result = resume_generator.generate_tailored_summary(base_summary, job_description)
 
     # Assert
     # Replace with your test expectations
@@ -26,6 +32,10 @@ def test_generate_tailored_summary_returns_rewritten_text():
 
 
 def test_generate_tailored_bullets_returns_aligned_bullets():
+    mock_jinja_env = MagicMock()
+    gpt_mock = MagicMock()
+    resume_generator = ResumeGenerator(mock_jinja_env, gpt_mock)
+    
     # Arrange
     bullets = [
         "Developed scalable APIs for internal services.",
@@ -40,7 +50,7 @@ def test_generate_tailored_bullets_returns_aligned_bullets():
     )
 
     # Act
-    result = generate_tailored_bullets(bullets, job_description)
+    result = resume_generator.generate_tailored_bullets(bullets, job_description)
 
     # Assert
     assert isinstance(result, list)

@@ -1,7 +1,6 @@
 # backend/generation/export/tailored_resume_exporter.py
 
 from pathlib import Path
-from backend.generation.prompts.tailored_resume_prompt import tailor_resume_data
 from backend.generation.generators.resume_generator import ResumeGenerator
 from backend.generation.client.openai_client import client
 from backend.generation.templates.jinja_env import get_jinja_env
@@ -9,10 +8,11 @@ from backend.generation.save.file_saver import save_to_file
 from backend.generation.export.pdf_exporter import convert_markdown_to_pdf
 
 def generate_and_render_tailored_resume(job_id: str, resume_data: dict, job_description: str) -> Path:
-    tailored_data = tailor_resume_data(resume_data, job_description)
     
     jinja_env = get_jinja_env()
     generator = ResumeGenerator(jinja_env=jinja_env, gpt_client=client)
+    tailored_data = generator.tailor_resume_data(resume_data, job_description)
+
     markdown = generator.generate(tailored_data)
 
     md_path = f"output/resumes/tailored_resume_{job_id}.md"

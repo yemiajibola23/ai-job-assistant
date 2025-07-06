@@ -3,7 +3,6 @@ from backend.autofill.field_matcher import match_label_to_key
 from typing import Optional, Any
 import os
 from backend.utils.logging import get_logger
-from backend.generation.export.tailored_resume_exporter import generate_and_render_tailored_resume
 from pathlib import Path
 import json
 
