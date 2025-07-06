@@ -24,7 +24,7 @@
 - [x] Tailored resume using GPT
 - [x] Prompts centralized
 - [x] Markdown export
-- [ ] PDF export logic verified
+- [x] PDF export logic verified
 - [ ] GPT fallback / retry
 - [ ] Test coverage for generation logic
 
@@ -37,9 +37,9 @@
 - [x] Resume + cover letter upload
 - [ ] Essay prompts sent to GPT and filled
 - [x] Field matching (rule + fuzzy + GPT)
-- [ ] Final confirmation of submission
+- [x] Final confirmation of submission
 - [ ] Batch autofill / CLI entry
-- [ ] Autofill result logging
+- [x] Autofill result logging
 - [ ] Tests with mock forms or headless Playwright
 
 #### 🔄 ATS-Specific Autofillers (Greenhouse First)
