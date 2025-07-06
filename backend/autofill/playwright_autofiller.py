@@ -5,6 +5,7 @@ import os
 from backend.utils.logging import get_logger
 from backend.generation.export.tailored_resume_exporter import generate_and_render_tailored_resume
 from pathlib import Path
+import json
 
 logger = get_logger(__name__)
 class PlaywrightAutofiller:
@@ -13,10 +14,10 @@ class PlaywrightAutofiller:
         self.uploaded_resume_path: Optional[Path] = None
         self.uploaded_cover_letter_path: Optional[Path] = None
         
-    def _fill_multistep_form(self, page: Any, application_data: dict) -> None:
+    def _fill_multistep_form(self, page: Any, application_data: dict, result_log: dict) -> None:
         max_steps = 5
         for _ in range(max_steps):
-            self._fill_fields(page, application_data)
+            self._fill_fields(page, application_data, result_log)
             if not self._click_next_if_available(page):
                 break
 
@@ -33,38 +34,61 @@ class PlaywrightAutofiller:
             logger.error(f"[multistep] ⚠️ Failed to click next: {e}")
         
         return False
+    
+    def _check_for_submission_confirmation(self, page) -> bool:
+        possible_texts = ["Thank you", "Application submitted", "We received", "Your application"]
+        for text in possible_texts:
+            if page.query_selector(f"text=/{text}/i"):
+                return True
+        return False
+        
         
     def fill_form(self, application_data: dict, page: Optional[Any]=None) -> dict:
+        result_log = {
+            "filled_fields": [],
+            "skipped_fields": [],
+            "uploaded_files": {},
+            "errors": [],
+            "clicked_submit": False,
+            "confirmation_found": False
+        }
+        
         if page is None:
             with sync_playwright() as p:
                 browser = p.chromium.launch()
                 context = browser.new_context()
                 page = context.new_page()
                 page.goto(self.job_url)
-                self._fill_multistep_form(page, application_data)
+                self._fill_multistep_form(page, application_data, result_log)
+                
+                result_log["clicked_submit"] = self._click_next_if_available(page)
+                
+                page.wait_for_timeout(3000)
+                result_log["confirmation_found"] = self._check_for_submission_confirmation(page)
         else:
-            # page.goto(self.job_url)
-            self._fill_multistep_form(page, application_data)
+            self._fill_multistep_form(page, application_data, result_log)
         
-        return {
-            "status": "submitted",
-            "resume_used": str(self.uploaded_resume_path)
-        }
+        logger.info(f"[autofill] 🧾 Autofill Result Log: {json.dumps(result_log, indent=2)}")
+
+        return result_log
             
-    def _fill_fields(self, page: Any, application_data: dict) -> None:
+    def _fill_fields(self, page: Any, application_data: dict, result_log: dict) -> None:
         fields = page.query_selector_all("input, textarea")
         for field in fields:
             label = self.extract_field_label(field, page)
             if not label:
                 logger.warning("No label found for field")
+                result_log["skipped_fields"].append("unlabeled: unknown field")
                 continue
             key = match_label_to_key(label)
             if not key:
                 logger.warning(f"[matcher] ❌ Unrecognized label → '{label.strip()}'")
+                result_log["skipped_fields"].append(f"unmatched: {label.strip()}")
                 continue
             value = application_data.get(key)
             if not value:
                 logger.warning(f"[matcher] ⚠️ No resume value found for key: '{key}' (matched from '{label.strip()}')")
+                result_log["skipped_fields"].append(key)
                 continue
             
             try:
@@ -74,17 +98,21 @@ class PlaywrightAutofiller:
                 if tag_name == "select":
                     field.select_option(value)
                     logger.debug(f"[autofill] ✅ Selected option for '{label.strip()}' as '{key}'")
+                    result_log["filled_fields"].append(key)
                 elif input_type == "radio":
                     radio_value = field.evaluate("el => el.value")
                     if radio_value == value:
                         field.check()
                         logger.debug(f"[autofill] ✅ Checked radio for '{label.strip()}' as '{key}'")
+                        result_log["filled_fields"].append(key)
                 elif input_type == "file":
                     if not os.path.isfile(value):
                         logger.warning(f"[autofill] ❌ File not found: {value}")
                         continue
                     field.set_input_files(value)
                     logger.debug(f"[autofill] ✅ Uploaded file for '{label.strip()}' as '{key}'")
+                    result_log["uploaded_files"][key] = [value]
+                    result_log["filled_fields"].append(key)
                     
                     if "resume" in label.lower():
                         self.uploaded_resume_path = value
@@ -94,8 +122,11 @@ class PlaywrightAutofiller:
                 else:
                     field.fill(value)
                     logger.debug(f"[autofill] ✅ Filled '{label.strip()}' as '{key}' with type '{input_type or tag_name}'")
+                    result_log["filled_fields"].append(key)
             except Exception as e:
                 logger.error(f"[autofill] ⚠️ Failed to handle field '{label.strip()}': {e}")
+                result_log["errors"].append(f"{label.strip()} → {str(e)}")
+
                 
                        
     def extract_field_label(self, field, page):

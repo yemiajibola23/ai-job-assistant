@@ -15,7 +15,9 @@ def load_user_profile():
         return json.load(f)
 
 def apply_to_job(job: dict, resume_data: dict):
-    job_id = job["id"]
+    job_id = job.get("id")
+    if not job_id:
+        raise ValueError("Missing job ID")
     job_url = job["url"]
     job_description = job["description"]
     
@@ -27,22 +29,22 @@ def apply_to_job(job: dict, resume_data: dict):
     # Step 2: Run the autofiller
     profile_data = load_user_profile()
     application_data = {
-    **profile_data,
-    "first_name": profile_data.get("name", "").split()[0],
-    "last_name": profile_data.get("name", "").split()[-1],
-    "email": profile_data.get("email"),
-    "phone": profile_data.get("phone"),
-    "resume": str(resume_path),
-    "cover_letter": str(cover_letter_path)
-}
+        **profile_data,
+        "first_name": profile_data.get("name", "").split()[0],
+        "last_name": profile_data.get("name", "").split()[-1],
+        "email": profile_data.get("email"),
+        "phone": profile_data.get("phone"),
+        "resume": str(resume_path),
+        "cover_letter": str(cover_letter_path)
+    }
     autofiller = PlaywrightAutofiller(job_url)
     autofill_result = autofiller.fill_form(application_data)
     
     conn = get_connection()
     app_dict = {
         "job_id": job_id,
-        "job_title": job.get("title"),
-        "company_name": job.get("company"),
+        "job_title": job.get("title", "Unknown Title"),
+        "company_name": job.get("company", "Unknown Company"),
         "location": job.get("location", ""),
         "tailored_resume_path": str(resume_path),
         "tailored_cover_letter_path": str(cover_letter_path),
@@ -56,3 +58,11 @@ def apply_to_job(job: dict, resume_data: dict):
     print(f"📝 Resume: {resume_path}")
     print(f"💌 Cover Letter: {cover_letter_path}")
     print(f"🔗 Job URL: {job_url}")
+    
+    print("\n📋 Autofill Summary:")
+    print(f"🧠 Filled fields: {len(autofill_result['filled_fields'])} → {autofill_result['filled_fields']}")
+    print(f"📁 Uploaded files: {autofill_result['uploaded_files']}")
+    print(f"⏭️ Skipped fields: {len(autofill_result['skipped_fields'])} → {autofill_result['skipped_fields']}")
+    print(f"⚠️ Errors: {len(autofill_result['errors'])} → {autofill_result['errors']}")
+    print(f"✅ Clicked Submit: {autofill_result['clicked_submit']}")
+    print(f"🎯 Confirmation Found: {autofill_result['confirmation_found']}")
