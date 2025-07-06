@@ -1,16 +1,14 @@
-from backend.resume.resume_parser import parse_resume_text, load_resume_text
+from backend.resume.resume_parser import parse_resume_text
 import sqlite3
 from backend.db.job_dao import save_jobs_to_db
 from backend.job_search.query_utils import extract_query_fields
-from backend.resume.resume_parser import load_resume_text
 from backend.job_search.serpapi_fetcher import fetch_jobs
 from backend.ranking.scoring import score_jobs
 from backend.job_search.parse_query import build_query_string, parse_query
 from typing import Optional
 
 
-def run_auto_query(resume_path: str, conn: sqlite3.Connection, user_query: Optional[str] = None) -> dict:
-    resume_text = load_resume_text(resume_path)
+def run_auto_query(resume_text: str, conn: sqlite3.Connection, user_query: Optional[str] = None) -> dict:
 
     if user_query and user_query.strip():
         user_query = user_query.strip()
