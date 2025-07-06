@@ -5,7 +5,7 @@ import os
 from backend.utils.logging import get_logger
 from pathlib import Path
 import json
-
+from backend.generation.generators.essay_generator import EssayResponseGenerator
 logger = get_logger(__name__)
 class PlaywrightAutofiller:
     def __init__(self, job_url: str):
@@ -168,6 +168,14 @@ class PlaywrightAutofiller:
         except Exception as e:
             logger.warning(f"[essay-check] Failed to evaluate textarea heuristics: {e}")
             return False
+    
             
-    def generate_essay_response(self, label, appplication_data) -> Optional[str]:
-        return ""
+    def generate_essay_response(self, label, application_data) -> Optional[str]:
+        try:
+            data = application_data.copy()
+            data["label"] = label
+            generator = EssayResponseGenerator()
+            return  generator.generate(data)
+        except Exception as e:
+            logger.error(f"[essay-generation] GPT failed: {e}")
+            return None

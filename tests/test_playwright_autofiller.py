@@ -5,12 +5,6 @@ import tempfile
 import os
 from playwright.sync_api import sync_playwright
 
-MINIMAL_RESUME_DATA = {
-    "name": "Test User",
-    "summary": "iOS dev",
-    "experience": [],
-    "skills": []
-}
 
 def make_test_autofiller(**kwargs):
     return PlaywrightAutofiller(
@@ -244,8 +238,7 @@ def test_click_next_if_available_returns_false_when_no_button():
 
     assert result is False
 
-@patch("backend.autofill.playwright_autofiller.generate_and_render_tailored_resume")
-def test_fill_form_uploads_resume(mock_generate_resume):
+def test_fill_form_uploads_resume():
     with sync_playwright() as p:
         browser = p.chromium.launch()
         context = browser.new_context()
@@ -268,9 +261,7 @@ def test_fill_form_uploads_resume(mock_generate_resume):
                 tmp.write(b"%PDF-1.4 mock resume")
                 resume_path = tmp.name
         
-            engine =make_test_autofiller()
-            mock_generate_resume.return_value = resume_path
-            
+            engine =make_test_autofiller()            
             engine.fill_form({"resume": resume_path}, mock_page)
         
             input_handle = mock_page.query_selector("input[type='file']")
@@ -280,4 +271,30 @@ def test_fill_form_uploads_resume(mock_generate_resume):
             assert file_name.endswith(".pdf")
         
             os.remove(resume_path)
+
+
+@patch("backend.generation.generators.essay_generator.EssayResponseGenerator.generate")
+def test_generate_essay_response_returns_formatted_text(mock_generate):
+    mock_generate.return_value = "Because I admire your mission."
+
+    engine = PlaywrightAutofiller(job_url="https://example.com")
+    application_data = {
+        "job_title": "iOS Engineer",
+        "company": "Flock Safety",
+        "summary": "Experienced mobile developer with a passion for civic tech."
+    }
+
+    result = engine.generate_essay_response("Why do you want to work here?", application_data)
+
+    assert isinstance(result, str)
+    assert "Because" in result
+
+    # Validate call structure
+    mock_generate.assert_called_once()
+    data_passed = mock_generate.call_args[0][0]
+    assert data_passed["job_title"] == "iOS Engineer"
+    assert data_passed["company"] == "Flock Safety"
+    assert data_passed["summary"] == "Experienced mobile developer with a passion for civic tech."
+    assert data_passed["label"] == "Why do you want to work here?"
+
                     
