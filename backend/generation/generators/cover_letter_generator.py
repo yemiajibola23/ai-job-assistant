@@ -12,7 +12,8 @@ class CoverLetterGenerator(BaseGenerator):
         try:
             template = self.jinja_env.get_template("cover_letter.md.j2")
             markdown = template.render(**data)
-            logger.debug("[DEBUG] JINJA RESULT:", markdown)
+            logger.debug(f"[DEBUG] JINJA RESULT: {markdown}")
+
 
             if self._is_sufficient(markdown): 
                 logger.debug("[cover_letter] 📝 Jinja rendered successfully")
