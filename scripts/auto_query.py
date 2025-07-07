@@ -6,10 +6,11 @@ from backend.job_search.serpapi_fetcher import fetch_jobs
 from backend.ranking.scoring import score_jobs
 from backend.job_search.parse_query import build_query_string, parse_query
 from typing import Optional
+from backend.resume.resume_parser import load_resume_text
 
-
-def run_auto_query(resume_text: str, conn: sqlite3.Connection, user_query: Optional[str] = None) -> dict:
-
+def run_auto_query(resume_path: str, conn: sqlite3.Connection, user_query: Optional[str] = None) -> dict:
+    resume_text = load_resume_text(resume_path)
+    
     if user_query and user_query.strip():
         user_query = user_query.strip()
         print(f"🧠 Parsing user query: {user_query}")

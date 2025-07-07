@@ -41,6 +41,9 @@ def parse_resume_text(text: str) -> dict:
     
     # Extract skills
     parsed["skills"] = extract_skills_from_text(text)
+    
+    # Extract experience bullets
+    parsed["experience"] = extract_experience_section(text)
 
     # Include full resume text
     parsed["raw_text"] = text.strip()
@@ -50,13 +53,44 @@ def parse_resume_text(text: str) -> dict:
 def extract_skills_from_text(text: str, skills=COMMON_SKILLS) -> list[str]:
     return [skill for skill in skills if skill.lower() in text.lower()]
 
-def save_parsed_resume_to_json(parsed_data: dict, output_path: str):
-    with open(output_path, 'w', encoding="utf-8") as f:
-        json.dump(parsed_data, f, indent=2)
-
 def load_resume_text(path: str) -> str:
     if path.endswith(".pdf"):
         return extract_text_from_pdf(path)
     
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
+    
+def extract_experience_section(text: str) -> list[dict]:
+    lines = text.splitlines()
+    experience_section = []
+    in_experience = False
+    job_entry = None
+
+    job_title_pattern = re.compile(r"^\s*(Senior|Lead|Junior)?\s*(iOS|Software|Mobile|Web|Data|Backend|Frontend)?\s*Developer|Engineer", re.IGNORECASE)
+    bullet_pattern = re.compile(r"^\s*[-•]\s+")
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Toggle experience section on/off
+        if re.match(r"^\s*Experience\s*$", stripped, re.IGNORECASE):
+            in_experience = True
+            continue
+        if in_experience and re.match(r"^\s*(Education|Skills|Projects|Technical Skills)\s*$", stripped, re.IGNORECASE):
+            break  # End of experience section
+
+        if not in_experience:
+            continue
+
+        # New job title
+        if job_title_pattern.match(stripped):
+            if job_entry:
+                experience_section.append(job_entry)
+            job_entry = {"title": stripped, "bullets": []}
+        elif bullet_pattern.match(stripped) and job_entry:
+            job_entry["bullets"].append(stripped.lstrip("-•").strip())
+
+    if job_entry:
+        experience_section.append(job_entry)
+
+    return experience_section
