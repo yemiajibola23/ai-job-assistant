@@ -3,10 +3,16 @@ from backend.generation.export.tailored_resume_exporter import generate_and_rend
 from backend.generation.export.tailored_cover_letter_exporter import generate_and_render_tailored_cover_letter
 from backend.db.application_dao import add_application
 from backend.db.connection import get_connection
+from backend.generation.generators.cover_letter_generator import CoverLetterGenerator
+from backend.generation.generators.resume_generator import ResumeGenerator
 from backend.autofill.playwright_autofiller import PlaywrightAutofiller
+from backend.generation.client.openai_client import client
+from backend.generation.templates.jinja_env import get_jinja_env
 import json
 from pathlib import Path
 import sqlite3
+
+
 
 def load_user_profile():
     path = Path("scripts/data/user_profile.json")
@@ -24,8 +30,13 @@ def apply_to_job(job: dict, resume_data: dict, conn: sqlite3.Connection):
     
     
     # Step 1: Generate assets
-    resume_path = generate_and_render_tailored_resume(job_id=job_id, resume_data=resume_data, job_description=job_description)
-    cover_letter_path = generate_and_render_tailored_cover_letter(job_id=job_id, resume_data=resume_data, job_description=job_description)
+    jinja_env = get_jinja_env()
+    resume_generator = ResumeGenerator(jinja_env, client)
+    cover_letter_generator = CoverLetterGenerator(jinja_env, client)
+    tailored_data = resume_generator.tailor_resume_data(resume_data, job_description)
+    
+    resume_path = generate_and_render_tailored_resume(job_id, resume_data, job_description, resume_generator, tailored_data)
+    cover_letter_path = generate_and_render_tailored_cover_letter(job_id, resume_data, job_description, tailored_data, cover_letter_generator)
     
     # Step 2: Run the autofiller
     profile_data = load_user_profile()
