@@ -20,6 +20,32 @@ class PlaywrightAutofiller:
             if not self._click_next_if_available(page):
                 break
 
+    def _click_submit_if_available(self, dry_run: bool, page: Any) -> bool:
+        submit_selectors = [
+            "button[type=submit]",
+            "button:has-text('Submit')",
+            "button:has-text('Apply')",
+            "button:has-text('Review and Submit')",
+            "input[type=submit]",
+            "button[aria-label='Submit']",
+        ]
+        
+        for selector in submit_selectors:
+            try:
+                button = page.query_selector(selector)
+                if button:
+                    if dry_run:
+                        logger.info(f"[autofill] 🧪 Dry run: found submit button '{selector}' but not clicking.")
+                        return False
+                    button.click()
+                    logger.info(f"[autofill] ✅ Clicked submit button '{selector}'")
+                    return True
+            except Exception as e:
+                logger.debug(f"[autofill] ❌ Error searching for submit button with selector {selector}: {e}")
+
+        logger.warning("[autofill] 🚫 No submit button found")
+        return False
+    
     def _click_next_if_available(self, page: Any) -> bool:
         try:
             next_button = page.query_selector("button:text('Next'), button:text('Continue'), button:text('→')")
@@ -42,7 +68,7 @@ class PlaywrightAutofiller:
         return False
         
         
-    def fill_form(self, application_data: dict, page: Optional[Any]=None) -> dict:
+    def fill_form(self, application_data: dict, page: Optional[Any]=None, dry_run: bool=True) -> dict:
         result_log = {
             "filled_fields": [],
             "skipped_fields": [],
@@ -60,7 +86,8 @@ class PlaywrightAutofiller:
                 page.goto(self.job_url)
                 self._fill_multistep_form(page, application_data, result_log)
                 
-                result_log["clicked_submit"] = self._click_next_if_available(page)
+                clicked = self._click_submit_if_available(dry_run, page)
+                result_log["clicked_submit"] = clicked
                 
                 page.wait_for_timeout(3000)
                 result_log["confirmation_found"] = self._check_for_submission_confirmation(page)
@@ -132,9 +159,7 @@ class PlaywrightAutofiller:
             except Exception as e:
                 logger.error(f"[autofill] ⚠️ Failed to handle field '{label.strip()}': {e}")
                 result_log["errors"].append(f"{label.strip()} → {str(e)}")
-
-                
-                       
+        
     def extract_field_label(self, field, page):
         try: 
             aria = field.get_attribute("aria-label")
@@ -152,7 +177,6 @@ class PlaywrightAutofiller:
             return field.evaluate("node => node.parentElement?.innerText") or ""
         except Exception as e:
             logger.error(e)
-    
     
     def _is_essay_field(self, field) -> bool:
         try:

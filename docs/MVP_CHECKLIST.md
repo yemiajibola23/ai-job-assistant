@@ -10,10 +10,8 @@
 - [x] Resume embedded as vector for profile matching
 - [x] Search query auto-generated from resume
 - [x] API fallback works (SerpAPI)
-- [ ] Scrapers implemented (Lever, Greenhouse, Ashby)
 - [x] Ranked results returned based on similarity
 - [x] Jobs stored in DB
-- [ ] Retry / bot protection handling for scrapers
 - [ ] Unit tests for query, match, scraper logic
 
 ---
