@@ -97,18 +97,79 @@ class PlaywrightAutofiller:
         logger.info(f"[autofill] 🧾 Autofill Result Log: {json.dumps(result_log, indent=2)}")
 
         return result_log
+    
+    def _extract_essay_fields(self, page) -> dict[str, Any]:
+        for_labels = page.query_selector_all("label[for]")
+        essay_fields: dict[str, Any] = {}
+        for label in for_labels:
+            try:
+                label_text = label.inner_text().strip()
+                for_attr = label.get_attribute("for")
+                if not for_attr or not label_text:
+                    continue
+                field = page.query_selector(f"#{for_attr}")
+                if field:
+                    input_type = (field.get_attribute("type") or "").lower()
+                    tag_name = field.evaluate("el => el.tagName.toLowerCase()")
+                    
+                    # Skip small fields
+                    if tag_name == "input" and input_type in {"checkbox", "radio", "file", "email", "tel", "number"}:
+                        continue
+                    if tag_name == "select":
+                        continue
+                    
+                    essay_fields[label_text] = field
+                    
+            except Exception as e:
+                logger.warning(f"[essay-detect] Failed to process label: {e}")
+            
+        return essay_fields
+        
             
     def _fill_fields(self, page: Any, application_data: dict, result_log: dict) -> None:
-        fields = page.query_selector_all("input, textarea")
+        fields = page.query_selector_all("input, textarea, [contenteditable=true], div[role='textbox'], .form-field, .form-control")
+        logger.debug(f"[autofill] 🧪 Found {len(fields)} fields to scan")
+        
+        essay_fields = self._extract_essay_fields(page)
+    
         for field in fields:
             label = self.extract_field_label(field, page)
+            tag_name = field.evaluate("el => el.tagName.toLowerCase()")
+            input_type = (field.get_attribute("type") or "").strip()
+            
+            if tag_name == "textarea" and self._is_essay_field(field) and label not in essay_fields:
+                essay_prompt = self.generate_essay_response(label, application_data)
+                if essay_prompt:
+                    field.fill(essay_prompt)
+                    logger.debug(f"[essay-generation] ✅ Filled essay: {essay_prompt}")
+                    result_log["filled_fields"].append(f"essay")
+                else:
+                    result_log["skipped_fields"].append(f"essay-failed")
+                continue
+            
             if not label:
                 logger.warning("No label found for field")
                 result_log["skipped_fields"].append("unlabeled: unknown field")
                 continue
             
+            logger.debug(f"[field-scan] tag={tag_name}, label={label.strip()}")
+            
             key = match_label_to_key(label, debug=True)
             if not key:
+                # Fallback: treat as essay if found in essay fields
+                if label.strip() in essay_fields:
+                    essay_prompt = self.generate_essay_response(label, application_data)
+                    if essay_prompt:
+                        essay_field = essay_fields[label]
+                        essay_field.fill(essay_prompt)
+                        logger.debug(f"[essay-generation] ✅ Filled essay for prompt: {label}")
+                        result_log["filled_fields"].append(f"essay: {label}")
+                    else:
+                        logger.warning(f"[essay-fill] ❌ Failed to generate essay for: '{label}'")
+                        result_log["skipped_fields"].append(f"essay-failed: {label}")
+                    continue
+                
+                # Otherwise log as unmatched
                 logger.warning(f"[matcher] ❌ Unrecognized label → '{label.strip()}'")
                 result_log["skipped_fields"].append(f"unmatched: {label.strip()}")
                 continue
@@ -130,9 +191,6 @@ class PlaywrightAutofiller:
                 continue
             
             try:
-                input_type = field.get_attribute("type") or ""
-                tag_name = field.evaluate("el => el.tagName.toLowerCase()")
-                
                 if tag_name == "select":
                     field.select_option(value)
                     logger.debug(f"[autofill] ✅ Selected option for '{label.strip()}' as '{key}'")
@@ -156,14 +214,6 @@ class PlaywrightAutofiller:
                         self.uploaded_resume_path = value
                     elif "cover" in label.lower():
                         self.uploaded_cover_letter_path = value
-                elif tag_name == "textarea" and self._is_essay_field(field):
-                    essay_prompt = self.generate_essay_response(label, application_data)
-                    if essay_prompt:
-                        field.fill(essay_prompt)
-                        result_log["filled_fields"].append(f"essay: {key}")
-                    else:
-                        result_log["skipped_fields"].append(f"essay-failed: {key}")
-                    continue
                 else:
                     field.fill(value)
                     logger.debug(f"[autofill] ✅ Filled '{label.strip()}' as '{key}' with type '{input_type or tag_name}'")
@@ -174,19 +224,22 @@ class PlaywrightAutofiller:
         
     def extract_field_label(self, field, page):
         try: 
-            aria = field.get_attribute("aria-label")
-            placeholder = field.get_attribute("placeholder")
-            id = field.get_attribute("id")
-            if aria:
-                return aria
-            if placeholder:
-                return placeholder
-            if id:
-                label_element = page.query_selector(f"label[for='{id}']")
+            id_attr = field.get_attribute("id")
+            if id_attr:
+                label_element = page.query_selector(f"label[for='{id_attr}']")
                 if label_element:
-                    return label_element.inner_text()
+                    return label_element.inner_text().strip()
             
-            return field.evaluate("node => node.parentElement?.innerText") or ""
+            aria = field.get_attribute("aria-label")
+            if aria:
+                return aria.strip()
+            
+            placeholder = field.get_attribute("placeholder")
+            if placeholder:
+                return placeholder.strip()
+            
+            return (field.evaluate("node => node.parentElement?.innerText") or "").strip()
+    
         except Exception as e:
             logger.error(e)
     
@@ -196,6 +249,8 @@ class PlaywrightAutofiller:
             rows = field.get_attribute("rows")
             cols = field.get_attribute("cols")
             
+            logger.debug(f"[essay-check] maxlength={maxlength}, rows={rows}, cols={cols}")
+
             return (
                 (maxlength and int(maxlength) >= 200) or
                 (rows and int(rows) >= 4) or 
@@ -210,6 +265,12 @@ class PlaywrightAutofiller:
         try:
             data = application_data.copy()
             data["label"] = label
+            
+            # Ensure required keys for prompt
+            data.setdefault("job_title", application_data.get("job_title", "iOS Engineer"))
+            data.setdefault("company", application_data.get("company", "the company"))
+            data.setdefault("summary", application_data.get("summary", "Experienced iOS engineer with a strong background in Swift and building scalable mobile apps."))
+            
             generator = EssayResponseGenerator()
             return  generator.generate(data)
         except Exception as e:

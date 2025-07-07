@@ -1,6 +1,10 @@
 from backend.autofill.playwright_autofiller import PlaywrightAutofiller
 from pathlib import Path
 import argparse
+import logging
+
+# Set logging level to DEBUG for all loggers
+logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dry-run", action="store_true", help="Run autofill without submitting application")

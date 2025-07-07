@@ -12,4 +12,4 @@ def get_essay_prompt(data: dict) -> str:
     company = data.get("company", "the company")
     resume_summary = data.get("summary", "")
 
-    return ESSAY_PROMPT.format(job_title, company, resume_summary, label)
+    return ESSAY_PROMPT.format(job_title=job_title, company=company, resume_summary=resume_summary, label=label)
