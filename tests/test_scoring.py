@@ -1,5 +1,5 @@
 import numpy as np
-from backend.ranking.scoring import filter_jobs, match_resume_to_jobs
+from backend.ranking.scoring import filter_jobs, _match_resume_to_jobs
 
 def test_filter_jobs():
     # Dummy resume embedding (normalized)
@@ -36,7 +36,7 @@ job_descriptions = [
 ]
 
 def test_resume_matching():
-    matches = match_resume_to_jobs(resume_text, job_descriptions, top_k=3)
+    matches = _match_resume_to_jobs(resume_text, job_descriptions, top_k=3)
 
     print("\n🔍 Top Resume Matches:")
     for idx, (job, score) in enumerate(matches, 1):
