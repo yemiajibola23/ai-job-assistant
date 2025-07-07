@@ -106,12 +106,24 @@ class PlaywrightAutofiller:
                 logger.warning("No label found for field")
                 result_log["skipped_fields"].append("unlabeled: unknown field")
                 continue
-            key = match_label_to_key(label)
+            
+            key = match_label_to_key(label, debug=True)
             if not key:
                 logger.warning(f"[matcher] ❌ Unrecognized label → '{label.strip()}'")
                 result_log["skipped_fields"].append(f"unmatched: {label.strip()}")
                 continue
+            
             value = application_data.get(key)
+            
+            # 👇 Special case: intelligently split name
+            if not value and key == "name" and "name" in application_data:
+                full_name = application_data["name"]
+                name_parts = full_name.split()
+                if "first" in label.lower() and name_parts:
+                    value = name_parts[0]
+                elif "last" in label.lower() and len(name_parts) > 1:
+                    value = name_parts[-1]
+            
             if not value:
                 logger.warning(f"[matcher] ⚠️ No resume value found for key: '{key}' (matched from '{label.strip()}')")
                 result_log["skipped_fields"].append(key)

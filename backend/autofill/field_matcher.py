@@ -4,43 +4,78 @@ from difflib import get_close_matches
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from backend.ranking.embedder import embed_texts
+from backend.autofill.field_matcher_config import (
+    CANONICAL_KEYS,
+    LABEL_KEY_MAP,
+    FUZZY_CUTOFF,
+    EMBEDDING_THRESHOLD,
+)
+
 
 class FieldMatcher:
-    def __init__(self, threshold: float=0.45) -> None:
-        self.keys = ["name", "phone", "email", "linkedin", "resume", "skills"]
+    def __init__(self, 
+                 keys: list[str]=CANONICAL_KEYS, 
+                 label_map: dict[str, str]=LABEL_KEY_MAP, 
+                 fuzzy_cutoff: float=FUZZY_CUTOFF, 
+                 embedding_threshold: float = EMBEDDING_THRESHOLD) -> None:
+        self.keys = keys
+        self.label_map = label_map
+        self.fuzzy_cutoff = fuzzy_cutoff
+        self.embedding_threshold = embedding_threshold
         self.key_embeddings = embed_texts(self.keys)
-        self.threshold = threshold
 
-    def match(self, label: str) -> str | None:
+    def match(self, label: str, debug: bool=False) -> Optional[str]:
+        normalized = normalize_label(label)
+        
+        match = (
+            self._rule_based_match(normalized)
+            or self._regex_heuristics(normalized)
+            or self._embedding_match(normalized)
+            or self._fuzzy_match(normalized)
+        )
+        
+        if debug:
+            if match:
+                print(f"[matcher-debug] ✅ Matched '{label}' → '{match}'")
+            else:
+                print(f"[matcher-debug] ❌ No match found for '{label}'")
+        
+        return match
+    
+    def _rule_based_match(self, normalized: str) -> Optional[str]:
+        return LABEL_KEY_MAP.get(normalized)
+
+    def _regex_heuristics(self, normalized: str) -> Optional[str]:
+        if "linkedin" in normalized:
+            return "linkedin"
+        if "resume" in normalized:
+            return "resume"
+        if "cover" in normalized and "letter" in normalized:
+            return "cover_letter"
+        return None
+
+    def _embedding_match(self, label: str) -> Optional[str]:
         label_embedding = np.array(embed_texts([label])[0])
-        similarities = cosine_similarity(np.array([label_embedding]), self.key_embeddings)[0]
-
-        best_index = np.argmax(similarities)
+        similarities = cosine_similarity(
+            np.array([label_embedding]), 
+            np.array(self.key_embeddings)
+        )[0]
+        best_index = int(np.argmax(similarities))
         best_score = similarities[best_index]
         best_key = self.keys[best_index]
-        
-        print(f"[matcher] Label: '{label}' → Best match: '{best_key}' (score: {best_score:.2f})")
-        
-        if best_score >= self.threshold:
+
+        if best_score >= self.embedding_threshold:
             return best_key
-        else:
-            return None
+        return None
+
+    def _fuzzy_match(self, normalized: str) -> Optional[str]:
+        matches = get_close_matches(normalized, LABEL_KEY_MAP.keys(), n=1, cutoff=0.85)
+        if matches:
+            return LABEL_KEY_MAP[matches[0]]
+        return None
 
 
-LABEL_KEY_MAP = {
-    "name": "name",
-    "full name": "name",
-    "email": "email",
-    "e mail": "email",
-    "email address": "email",
-    "e-mail address": "email",
-    "skillset": "skills",
-    "skills": "skills",
-    "phone": "phone",
-    "phone number": "phone",
-    "contact email": "email",
-    "contactemail": "email",
-}
+_matcher = FieldMatcher()
 
 def normalize_label(label: str) -> str:
     label = label.lower()
@@ -49,32 +84,5 @@ def normalize_label(label: str) -> str:
     
     return label.strip()
 
-
-_matcher = FieldMatcher()
-
-def match_label_to_key(label: str) -> Optional[str]:
-    embedding_match = _matcher.match(label)
-    if embedding_match:
-        return embedding_match
-    
-    key = normalize_label(label)
-    
-    if key in LABEL_KEY_MAP:
-        return LABEL_KEY_MAP[key]
-    
-    if "linkedin" in key:
-        return "linkedin"
-    
-    if "resume" in key:
-        return "resume"
-    
-    if "cover" in key and "letter" in key:
-        return "cover_letter"
-    
-    matches = get_close_matches(key, LABEL_KEY_MAP.keys(), n=1, cutoff=0.85)
-    if matches:
-        print(f"[matcher] 🤏 Fuzzy matched '{label.strip()}' → '{matches[0]}'")
-        return LABEL_KEY_MAP[matches[0]]
-    
-    return None
-    
+def match_label_to_key(label: str, debug: bool = True) -> Optional[str]:
+    return _matcher.match(label, debug)
