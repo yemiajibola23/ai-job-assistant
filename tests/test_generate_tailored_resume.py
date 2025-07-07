@@ -40,8 +40,8 @@ def test_generate_falls_back_on_gpt_on_jinja_failure():
     
     assert result == "GPT fallback resume"
 
-@patch("backend.generation.prompts.tailored_resume_prompt.generate_tailored_bullets")
-@patch("backend.generation.prompts.tailored_resume_prompt.generate_tailored_summary")
+@patch.object(ResumeGenerator, "generate_tailored_bullets")
+@patch.object(ResumeGenerator, "generate_tailored_summary")
 def test_tailor_resume_data(mock_tailored_summary, mock_tailored_bullets):
     mock_tailored_summary.return_value = "Really good at iOS Development"
     mock_tailored_bullets.return_value = ["Bullet1", "Bullet2", "Bullet3", "Bullet4"]
