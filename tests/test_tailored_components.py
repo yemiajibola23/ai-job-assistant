@@ -4,9 +4,14 @@ from backend.generation.generators.resume_generator import ResumeGenerator
 from unittest.mock import MagicMock
 
 def test_generate_tailored_summary_returns_rewritten_text():
-    
     mock_jinja_env = MagicMock()
     gpt_mock = MagicMock()
+    gpt_mock.generate.return_value = (
+        "I'm a seasoned iOS developer with experience using Swift, SwiftUI, Combine, and async/await "
+        "to build high-performance mobile applications. I thrive in collaborative, fast-paced environments "
+        "and bring a strong foundation in modular architecture and unit testing."
+    )
+    
     resume_generator = ResumeGenerator(mock_jinja_env, gpt_mock)
     
     # Arrange
@@ -34,6 +39,12 @@ def test_generate_tailored_summary_returns_rewritten_text():
 def test_generate_tailored_bullets_returns_aligned_bullets():
     mock_jinja_env = MagicMock()
     gpt_mock = MagicMock()
+    gpt_mock.generate.return_value = (
+        "1. Built and maintained scalable RESTful APIs using async Python.\n"
+        "2. Led mentoring sessions for junior backend engineers.\n"
+        "3. Deployed microservices with Docker and Kubernetes."
+    )
+    
     resume_generator = ResumeGenerator(mock_jinja_env, gpt_mock)
     
     # Arrange
