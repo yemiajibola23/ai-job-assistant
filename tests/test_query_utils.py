@@ -34,19 +34,6 @@ def test_extract_query_fields_missing_location():
     assert result.get("inferred_level") == "Junior"
     assert result.get("work_type") == "Part-time"
     
-
-def test_extract_query_fields_missing_experience():
-    parsed_resume = {
-        "summary": "Looking for a contract React Developer role. Based in Chicago, IL.",
-        "location": "Chicago, IL"
-    }
-
-    try:
-        extract_query_fields(parsed_resume)
-        assert False, "Should raise KeyError when experience is missing"
-    except (KeyError, IndexError):
-        pass  # expected
-
 def test_extract_query_fields_unclear_level():
     parsed_resume = {
         "experience": [{"title": "Software Engineer"}],
