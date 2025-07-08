@@ -1,5 +1,4 @@
 from playwright.sync_api import sync_playwright
-from backend.autofill.autofill import autofill_application
 from backend.resume.resume_parser import load_resume_text, parse_resume_text
 from backend.utils.constants import TEST_RESUME_PATH
 from backend.autofill.playwright_autofiller import PlaywrightAutofiller

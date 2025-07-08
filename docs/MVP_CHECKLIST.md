@@ -41,13 +41,48 @@
 - [ ] Tests with mock forms or headless Playwright
 
 #### 🔄 ATS-Specific Autofillers (Greenhouse First)
-- [ ] Create `BaseAutofiller` class with shared interface
-- [ ] Build `GreenhouseAutofiller` with multistep + upload logic
-- [ ] Implement `autofill_router.py` to select autofiller based on URL
-- [ ] Refactor current Playwright logic to delegate to selected autofiller
-- [ ] Write unit tests for `GreenhouseAutofiller` using mock Playwright page
-- [ ] Log ATS name + autofill strategy used (for future debugging)
-- [ ] Add placeholder files for Lever, Ashby with `NotImplementedError`
+
+- [X] 🧱 **Create `BaseAutofiller` class**
+  - Define shared methods like `_fill_fields`, `_extract_label`, `_handle_file_field`
+  - Use abstract base class (ABC) or duck typing
+
+- [ ] 🌿 **Implement `GreenhouseAutofiller`**
+  - Handle multi-step forms (`Next` button detection)
+  - Support essay field detection quirks (some are `<select>`)
+  - Smart attach handler (resume/cover letter)
+  - Add `_fill_fields()` override with Greenhouse-specific tweaks
+
+- [ ] 🔀 **Create `autofill_router.py`**
+  - Inspect page URL and DOM to determine ATS (`Greenhouse`, `Lever`, `Ashby`, etc.)
+  - Return corresponding autofiller subclass
+  - Fallback to `BaseAutofiller` or raise `NotImplementedError`
+
+- [ ] 🛠️ **Refactor current `PlaywrightAutofiller` to delegate**
+  - Replace internal logic with delegation to routed autofiller
+  - Keep orchestration logic (e.g. dry run, log aggregation)
+
+- [ ] 🧪 **Write unit tests for `GreenhouseAutofiller`**
+  - Use mock Playwright page
+  - Validate field matching, essay handling, and attach logic
+
+- [ ] 🪪 **Log ATS name + strategy**
+  - Add `ats_name` attribute to autofiller instance
+  - Log selected strategy during execution for debugging and analytics
+
+- [ ] 📦 **Add placeholder modules**
+  - `LeverAutofiller`, `AshbyAutofiller`, etc.
+  - Each should raise `NotImplementedError` in `_fill_fields`
+
+- [ ] 🧠 **Improve essay detection heuristics**
+  - Only treat as essay if:
+    - Label contains essay-like terms (e.g. "why", "describe", "tell us")
+    - AND tag is `textarea` or `contenteditable`
+  - Add debug logs when skipping essays misclassified as select
+
+- [ ] 📎 **Support generic attach fields**
+  - Detect resume/cover uploads from ambiguous labels
+  - Fallback to `_handle_file_field` when attach label logic fails
+
 
 ---
 
