@@ -1,24 +1,21 @@
 from backend.utils.logging import get_logger
-from typing import Any
+from typing import Any, Optional
+from backend.autofill.field_matcher import FieldMatcher
 
 logger = get_logger(__name__)
 class BaseAutofiller:
-    def __init__(self, page: Any, application_data: dict[str, Any], result_log: dict[str, Any], dry_run: bool=True) -> None:
+    def __init__(self, page: Any, application_data: dict[str, Any], dry_run: bool=True) -> None:
         self.page = page
         self.application_data = application_data
-        self.result_log = result_log
         self.dry_run = dry_run
-    
-    def fill(self):
+        self.field_matcher = FieldMatcher()
+            
+    def fill(self) -> dict[str, Any]:
         raise NotImplementedError("Subclasses must implement fill().")
 
-    def _upload_resume(self, resume_path: str) -> None:
+    def _upload_file_field(self, data_key: str, path: str, result_log: dict[str, Any]) -> None:
         raise NotImplementedError("Subclasses must implement resume upload logic.")
 
-    def _upload_cover_letter(self, cover_letter_path: str) -> None:
-        raise NotImplementedError("Subclasses must implement cover letter upload logic.")
-
-    
     def _submit_application(self) -> bool:
         submit_selectors = [
             "button[type=submit]",
@@ -58,3 +55,43 @@ class BaseAutofiller:
             logger.error(f"[multistep] ⚠️ Failed to click next: {e}")
         
         return False
+    
+    def _match_fields(self) -> list[tuple[Any, str]]:
+        fields = self.page.query_selector_all("input, textarea, select")
+        matched_fields = []
+        for field in fields:
+            label = self._extract_label(field)
+            if not label:
+                logger.debug("[field-match] ❌ No label found for field")
+                continue
+            
+            logger.debug(f"[field-match] 🔎 Found label: '{label}'")
+            
+            key = self.field_matcher.match(label)
+            if key and key in self.application_data:
+                logger.info(f"[field-match] ✅ Matched '{label}' → '{key}'")
+                matched_fields.append((field, key))
+            else:
+                logger.debug(f"[field-match] 🚫 No match for label '{label}'")
+        return matched_fields
+    
+    def _extract_label(self, field: Any) -> Optional[str]:
+        field_id = field.get_attribute("id")
+        if field_id:
+            label_elem = self.page.query_selector(f"label[for='{field_id}']")
+            if label_elem:
+                label_text = label_elem.inner_text().strip()
+                logger.debug(f"[label-extract] 🏷 Found 'for' label: {label_text}")
+                return label_text
+
+        # fallback: look for closest preceding <label>
+        label_handle = field.evaluate_handle("el => el.closest('label') || el.parentElement?.querySelector('label')")
+        label_elem = label_handle.as_element()
+        
+        if label_elem:
+            label_text = label_elem.inner_text().strip()
+            logger.debug(f"[label-extract] 🪝 Found fallback label: {label_text}")
+            return label_text
+        
+        logger.debug("[label-extract] ❌ No label found")
+        return None
