@@ -84,8 +84,7 @@ class GreenhouseAutofiller(BaseAutofiller):
             result_log["skipped_fields"].append(key)
             return
         try:
-            if not self.dry_run:
-                field.fill(value)
+            field.fill(value)
             logger.info(f"[autofill] 📝 Filled '{key}' with '{value}'")
             result_log["filled_fields"].append(key)
         except Exception as e:
@@ -99,8 +98,7 @@ class GreenhouseAutofiller(BaseAutofiller):
             result_log["skipped_fields"].append(key)
             return
         try:
-            if not self.dry_run:
-                field.select_option(label=value)
+            field.select_option(label=value)
             logger.info(f"[autofill] ✅ Selected '{value}' for '{key}'")
             result_log["filled_fields"].append(key)
         except Exception as e:
@@ -114,11 +112,10 @@ class GreenhouseAutofiller(BaseAutofiller):
         )
         if file_input:
             try:
-                if not self.dry_run:
-                    file_input.set_input_files(path)
-                    logger.info(f"[Greenhouse] Uploaded {key} from {path}")
-                    result_log["uploaded_files"][key] = [path]
-                    result_log["filled_fields"].append(key)
+                file_input.set_input_files(path)
+                logger.info(f"[Greenhouse] Uploaded {key} from {path}")
+                result_log["uploaded_files"][key] = [path]
+                result_log["filled_fields"].append(key)
             except Exception as e:
                logger.warning(f"[Greenhouse] ❌ Upload failed for {key}: {e}")
                result_log["errors"].append(f"{key}: {str(e)}")
