@@ -128,9 +128,7 @@ class PlaywrightAutofiller:
     def _fill_fields(self, page: Any, application_data: dict, result_log: dict) -> None:
         fields = page.query_selector_all("input, textarea, [contenteditable=true], div[role='textbox'], .form-field, .form-control")
         logger.debug(f"[autofill] 🧪 Found {len(fields)} fields to scan")
-
-        essay_fields = self._extract_essay_fields(page)
-
+        
         for field in fields:
             label = self.extract_field_label(field, page)
             label_text = (label or "").strip()
@@ -143,26 +141,23 @@ class PlaywrightAutofiller:
                 continue
 
             logger.debug(f"[field-scan] tag={tag_name}, label={label_text}")
+            
+            if self._handle_attach_label(page, label_text, application_data, result_log):
+                continue
 
             key = match_label_to_key(label, debug=True)
+            value = application_data.get(key)
 
             if not key:
                 # Fallback: treat as essay if essay-like
                 if self._is_essay_field(field, label_text):
-                    essay_prompt = self.generate_essay_response(label_text, application_data)
-                    if essay_prompt:
-                        field.fill(essay_prompt)
-                        logger.debug(f"[essay-generation] ✅ Filled essay: {essay_prompt}")
-                        result_log["filled_fields"].append(f"essay: {label_text}")
-                    else:
-                        result_log["skipped_fields"].append(f"essay-failed: {label_text}")
+                    self._handle_essay_field(field, label_text, application_data, result_log)
                     continue
 
                 logger.warning(f"[matcher] ❌ Unrecognized label → '{label_text}'")
                 result_log["skipped_fields"].append(f"unmatched: {label_text}")
                 continue
-
-            value = application_data.get(key)
+            
 
             # Special case: intelligently split name
             if not value and key == "name" and "name" in application_data:
@@ -178,39 +173,98 @@ class PlaywrightAutofiller:
                 result_log["skipped_fields"].append(key)
                 continue
 
-            try:
-                if tag_name == "select":
-                    field.select_option(value)
-                    logger.debug(f"[autofill] ✅ Selected option for '{label_text}' as '{key}'")
-                    result_log["filled_fields"].append(key)
-                elif input_type == "radio":
-                    radio_value = field.evaluate("el => el.value")
-                    if radio_value == value:
-                        field.check()
-                        logger.debug(f"[autofill] ✅ Checked radio for '{label_text}' as '{key}'")
-                        result_log["filled_fields"].append(key)
-                elif input_type == "file":
-                    if not os.path.isfile(value):
-                        logger.warning(f"[autofill] ❌ File not found: {value}")
-                        continue
-                    field.set_input_files(value)
-                    logger.debug(f"[autofill] ✅ Uploaded file for '{label_text}' as '{key}'")
-                    result_log["uploaded_files"][key] = [value]
-                    result_log["filled_fields"].append(key)
+            if input_type == "file":
+                self._handle_file_field(field, value, label_text, key, result_log)
+            else:
+                self._handle_general_field(field, tag_name, input_type, value, label_text, key, result_log)
 
-                    if "resume" in label_text.lower():
-                        self.uploaded_resume_path = value
-                    elif "cover" in label_text.lower():
-                        self.uploaded_cover_letter_path = value
-                else:
-                    field.fill(value)
-                    logger.debug(f"[autofill] ✅ Filled '{label_text}' as '{key}' with type '{input_type or tag_name}'")
-                    result_log["filled_fields"].append(key)
-            except Exception as e:
-                logger.error(f"[autofill] ⚠️ Failed to handle field '{label_text}': {e}")
-                result_log["errors"].append(f"{label_text} → {str(e)}")
+    def _handle_essay_field(self, field, label_text, application_data, result_log):
+        essay_prompt = self.generate_essay_response(label_text, application_data)
+        if essay_prompt:
+            field.fill(essay_prompt)
+            logger.debug(f"[essay-generation] ✅ Filled essay: {essay_prompt}")
+            result_log["filled_fields"].append(f"essay: {label_text}")
+        else:
+            logger.warning(f"[essay-fill] ❌ Failed to generate essay for: '{label_text}'")
+            result_log["skipped_fields"].append(f"essay-failed: {label_text}")
+    
+    def _handle_file_field(self, field, value, label_text, key, result_log):
+        if not os.path.isfile(value):
+            logger.warning(f"[autofill] ❌ File not found: {value}")
+            return
+        field.set_input_files(value)
+        logger.debug(f"[autofill] ✅ Uploaded file for '{label_text}' as '{key}'")
+        result_log["uploaded_files"][key] = [value]
+        result_log["filled_fields"].append(key)
+
+        if "resume" in label_text.lower():
+            self.uploaded_resume_path = value
+        elif "cover" in label_text.lower():
+            self.uploaded_cover_letter_path = value
+    
+        return True
+    
+    def _handle_attach_label(self, page, label_text: str, application_data: dict, result_log: dict) -> bool:
+        ATTACH_LABEL_KEYWORDS = [
+            "attach", "upload", "drop your resume", "select file", "upload your resume", "choose file"
+        ]
+        label_text = label_text.lower().strip()
+
+        if not any(keyword in label_text for keyword in ATTACH_LABEL_KEYWORDS):
+            return False
+
+        key = "cover_letter" if "cover" in label_text else "resume"
+        file_path = application_data.get(key) or getattr(self, f"uploaded_{key}_path", None)
+
+        if not file_path or not os.path.isfile(file_path):
+            logger.warning(f"[autofill] ⚠️ {key.title()} file not found for attach label: '{label_text}'")
+            result_log["skipped_fields"].append(f"attach-missing: {label_text}")
+            return True  # Avoid reprocessing
+
+        try:
+            label_el = page.query_selector(f"label:text('{label_text}')")
+            file_input = label_el.evaluate_handle("el => document.getElementById(el.getAttribute('for'))") if label_el else None
+
+            if file_input:
+                file_input.set_input_files(file_path)
+                logger.debug(f"[autofill] ✅ Uploaded {key} via attach label: '{label_text}'")
+                result_log["uploaded_files"][key] = [file_path]
+                result_log["filled_fields"].append(key)
+                setattr(self, f"uploaded_{key}_path", file_path)
+                return True
+            else:
+                logger.warning(f"[autofill] ❌ Could not find file input for attach label '{label_text}'")
+                result_log["skipped_fields"].append(f"attach-failed: {label_text}")
+                return True
+        except Exception as e:
+            logger.error(f"[autofill] ❌ Failed to attach {key} for '{label_text}': {e}")
+            result_log["errors"].append(f"{label_text} → {str(e)}")
+            return True
 
         
+    
+    def _handle_general_field(self, field, tag_name, input_type, value, label_text, key, result_log):
+        try:
+            if tag_name == "select":
+                logger.debug(f"[general] ⏳ Handling <select> for '{label_text}'")
+                field.select_option(value)
+                logger.debug(f"[autofill] ✅ Selected option for '{label_text}' as '{key}'")
+            elif input_type == "radio":
+                logger.debug(f"[general] ⏳ Handling radio for '{label_text}'")
+                radio_value = field.evaluate("el => el.value")
+                if radio_value == value:
+                    field.check()
+                    logger.debug(f"[autofill] ✅ Checked radio for '{label_text}' as '{key}'")
+            else:
+                logger.debug(f"[general] ⏳ Handling text input for '{label_text}'")
+                field.fill(value)
+                logger.debug(f"[autofill] ✅ Filled '{label_text}' as '{key}' with type '{input_type or tag_name}'")
+
+            result_log["filled_fields"].append(key)
+        except Exception as e:
+            logger.error(f"[general] ⚠️ Failed to fill general field '{label_text}': {e}")
+            result_log["errors"].append(f"{label_text} → {str(e)}")
+
     def extract_field_label(self, field, page):
         try: 
             id_attr = field.get_attribute("id")
