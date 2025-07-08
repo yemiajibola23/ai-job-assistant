@@ -49,41 +49,81 @@ class GreenhouseAutofiller(BaseAutofiller):
         while self._click_next_if_available():
             pass
 
-        self._submit_application()
+        clicked = self._submit_application()
+        result_log["clicked_submit"] = clicked
+        
+        self.page.wait_for_timeout(3000)
+        result_log["confirmation_found"] = self._check_for_submission_confirmation()
         return result_log
 
     def _fill_text_field(self, field: Any, key: str, result_log: dict[str, Any]):
         value = self.application_data.get(key)
+        
+        if key == "name":
+            label_text_raw = self._extract_label(field)
+            label_text = label_text_raw.lower() if label_text_raw else ""
+            full_name = self.application_data.get("name") or ""
+            if not full_name:
+                logger.debug("[autofill] ⚠️ Cannot disambiguate 'name' – no full name in data")
+                result_log["skipped_fields"].append("name")
+                return
+            
+            parts = full_name.strip().split()
+            
+            if "first" in label_text:
+                value = parts[0]
+                key = "first_name"
+            elif "last" in label_text:
+                value = parts[1]
+                key = "last_name"
+            
+        
+        
         if not value:
             logger.debug(f"[autofill] ⚠️ No value for text field '{key}'")
+            result_log["skipped_fields"].append(key)
             return
-        if not self.dry_run:
-            field.fill(value)
-        logger.info(f"[autofill] 📝 Filled '{key}' with '{value}'")
-        result_log[key] = "filled"
+        try:
+            if not self.dry_run:
+                field.fill(value)
+            logger.info(f"[autofill] 📝 Filled '{key}' with '{value}'")
+            result_log["filled_fields"].append(key)
+        except Exception as e:
+            logger.error(f"[autofill] ❌ Failed to fill '{key}': {e}")
+            result_log["errors"].append(f"{key}: {str(e)}")
 
     def _fill_select_field(self, field: Any, key: str, result_log: dict[str, Any]):
         value = self.application_data.get(key)
         if not value:
             logger.debug(f"[autofill] ⚠️ No value for select field '{key}'")
+            result_log["skipped_fields"].append(key)
             return
-        if not self.dry_run:
-            field.select_option(label=value)
-        logger.info(f"[autofill] ✅ Selected '{value}' for '{key}'")
-        result_log[key] = "selected"
+        try:
+            if not self.dry_run:
+                field.select_option(label=value)
+            logger.info(f"[autofill] ✅ Selected '{value}' for '{key}'")
+            result_log["filled_fields"].append(key)
+        except Exception as e:
+            logger.error(f"[autofill] ❌ Failed to select '{key}': {e}")
+            result_log["errors"].append(f"{key}: {str(e)}")
 
-    def _upload_file_field(self, data_key: str, path: str, result_log: dict[str, Any]):
+    def _upload_file_field(self, key: str, path: str, result_log: dict[str, Any]):
         file_input = (
-            self.page.query_selector(f"input[type='file'][name='{data_key}']")
-            or self.page.query_selector(f"input[type='file'][id*='{data_key}']")
+            self.page.query_selector(f"input[type='file'][name='{key}']")
+            or self.page.query_selector(f"input[type='file'][id*='{key}']")
         )
         if file_input:
-            if not self.dry_run:
-                file_input.set_input_files(path)
-            logger.info(f"[Greenhouse] Uploaded {data_key} from {path}")
-            result_log[data_key] = "uploaded"
+            try:
+                if not self.dry_run:
+                    file_input.set_input_files(path)
+                    logger.info(f"[Greenhouse] Uploaded {key} from {path}")
+                    result_log["uploaded_files"][key] = [path]
+                    result_log["filled_fields"].append(key)
+            except Exception as e:
+               logger.warning(f"[Greenhouse] ❌ Upload failed for {key}: {e}")
+               result_log["errors"].append(f"{key}: {str(e)}")
         else:
-            logger.warning(f"[Greenhouse] File input for {data_key} not found")
+            logger.warning(f"[Greenhouse] File input for {key} not found")
 
     # def _fill_voluntary_demographics(self):
     #     voluntary_fields = {

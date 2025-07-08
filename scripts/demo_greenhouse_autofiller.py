@@ -1,18 +1,25 @@
 from playwright.sync_api import sync_playwright
 from backend.autofill.autofill_router import autofill_router
+from pathlib import Path
+import json
 
+def load_user_profile():
+    path = Path("scripts/data/user_profile.json")
+    if not path.exists():
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+    
+profile_data = load_user_profile()
 application_data = {
-    "first_name": "Jane",
-    "last_name": "Doe",
-    "email": "jane@example.com",
-    "phone": "555-123-4567",
-    "resume_path": "/Users/yourname/Desktop/resume.pdf",  # replace path
-    "cover_letter_path": "/Users/yourname/Desktop/cover.pdf",  # replace path
-    "gender": "I don't wish to answer",
-    "race": "Black or African American",
-    "veteran_status": "I am not a veteran",
-    "disability_status": "Yes, I have a disability",
-}
+    **profile_data,
+    "first_name": profile_data.get("name", "").split()[0],
+    "last_name": profile_data.get("name", "").split()[-1],
+    "email": profile_data.get("email"),
+    "phone": profile_data.get("phone"),
+    "resume": "path/to/resume",
+    "cover_letter": "path/to/cover_letter"
+    }
 
 def run():
     with sync_playwright() as p:

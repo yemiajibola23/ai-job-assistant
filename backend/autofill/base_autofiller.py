@@ -13,7 +13,7 @@ class BaseAutofiller:
     def fill(self) -> dict[str, Any]:
         raise NotImplementedError("Subclasses must implement fill().")
 
-    def _upload_file_field(self, data_key: str, path: str, result_log: dict[str, Any]) -> None:
+    def _upload_file_field(self, key: str, path: str, result_log: dict[str, Any]) -> None:
         raise NotImplementedError("Subclasses must implement resume upload logic.")
 
     def _submit_application(self) -> bool:
@@ -68,7 +68,7 @@ class BaseAutofiller:
             logger.debug(f"[field-match] 🔎 Found label: '{label}'")
             
             key = self.field_matcher.match(label)
-            if key and key in self.application_data:
+            if key:
                 logger.info(f"[field-match] ✅ Matched '{label}' → '{key}'")
                 matched_fields.append((field, key))
             else:
@@ -95,3 +95,10 @@ class BaseAutofiller:
         
         logger.debug("[label-extract] ❌ No label found")
         return None
+    
+    def _check_for_submission_confirmation(self) -> bool:
+        possible_texts = ["Thank you", "Application submitted", "We received", "Your application"]
+        for text in possible_texts:
+            if self.page.query_selector(f"text=/{text}/i"):
+                return True
+        return False

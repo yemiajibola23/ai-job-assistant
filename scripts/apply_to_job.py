@@ -12,8 +12,6 @@ import json
 from pathlib import Path
 import sqlite3
 
-
-
 def load_user_profile():
     path = Path("scripts/data/user_profile.json")
     if not path.exists():
