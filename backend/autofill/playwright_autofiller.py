@@ -124,103 +124,92 @@ class PlaywrightAutofiller:
                 logger.warning(f"[essay-detect] Failed to process label: {e}")
             
         return essay_fields
-        
-            
+    
     def _fill_fields(self, page: Any, application_data: dict, result_log: dict) -> None:
         fields = page.query_selector_all("input, textarea, [contenteditable=true], div[role='textbox'], .form-field, .form-control")
         logger.debug(f"[autofill] 🧪 Found {len(fields)} fields to scan")
-        
+
         essay_fields = self._extract_essay_fields(page)
-    
+
         for field in fields:
             label = self.extract_field_label(field, page)
+            label_text = (label or "").strip()
             tag_name = field.evaluate("el => el.tagName.toLowerCase()")
             input_type = (field.get_attribute("type") or "").strip()
-            
-            if tag_name == "textarea" and self._is_essay_field(field) and label not in essay_fields:
-                essay_prompt = self.generate_essay_response(label, application_data)
-                if essay_prompt:
-                    field.fill(essay_prompt)
-                    logger.debug(f"[essay-generation] ✅ Filled essay: {essay_prompt}")
-                    result_log["filled_fields"].append(f"essay")
-                else:
-                    result_log["skipped_fields"].append(f"essay-failed")
-                continue
-            
+
             if not label:
                 logger.warning("No label found for field")
                 result_log["skipped_fields"].append("unlabeled: unknown field")
                 continue
-            
-            logger.debug(f"[field-scan] tag={tag_name}, label={label.strip()}")
-            
+
+            logger.debug(f"[field-scan] tag={tag_name}, label={label_text}")
+
             key = match_label_to_key(label, debug=True)
+
             if not key:
-                # Fallback: treat as essay if found in essay fields
-                if label.strip() in essay_fields:
-                    essay_prompt = self.generate_essay_response(label, application_data)
+                # Fallback: treat as essay if essay-like
+                if self._is_essay_field(field, label_text):
+                    essay_prompt = self.generate_essay_response(label_text, application_data)
                     if essay_prompt:
-                        essay_field = essay_fields[label]
-                        essay_field.fill(essay_prompt)
-                        logger.debug(f"[essay-generation] ✅ Filled essay for prompt: {label}")
-                        result_log["filled_fields"].append(f"essay: {label}")
+                        field.fill(essay_prompt)
+                        logger.debug(f"[essay-generation] ✅ Filled essay: {essay_prompt}")
+                        result_log["filled_fields"].append(f"essay: {label_text}")
                     else:
-                        logger.warning(f"[essay-fill] ❌ Failed to generate essay for: '{label}'")
-                        result_log["skipped_fields"].append(f"essay-failed: {label}")
+                        result_log["skipped_fields"].append(f"essay-failed: {label_text}")
                     continue
-                
-                # Otherwise log as unmatched
-                logger.warning(f"[matcher] ❌ Unrecognized label → '{label.strip()}'")
-                result_log["skipped_fields"].append(f"unmatched: {label.strip()}")
+
+                logger.warning(f"[matcher] ❌ Unrecognized label → '{label_text}'")
+                result_log["skipped_fields"].append(f"unmatched: {label_text}")
                 continue
-            
+
             value = application_data.get(key)
-            
-            # 👇 Special case: intelligently split name
+
+            # Special case: intelligently split name
             if not value and key == "name" and "name" in application_data:
                 full_name = application_data["name"]
                 name_parts = full_name.split()
-                if "first" in label.lower() and name_parts:
+                if "first" in label_text.lower() and name_parts:
                     value = name_parts[0]
-                elif "last" in label.lower() and len(name_parts) > 1:
+                elif "last" in label_text.lower() and len(name_parts) > 1:
                     value = name_parts[-1]
-            
+
             if not value:
-                logger.warning(f"[matcher] ⚠️ No resume value found for key: '{key}' (matched from '{label.strip()}')")
+                logger.warning(f"[matcher] ⚠️ No resume value found for key: '{key}' (matched from '{label_text}')")
                 result_log["skipped_fields"].append(key)
                 continue
-            
+
             try:
                 if tag_name == "select":
                     field.select_option(value)
-                    logger.debug(f"[autofill] ✅ Selected option for '{label.strip()}' as '{key}'")
+                    logger.debug(f"[autofill] ✅ Selected option for '{label_text}' as '{key}'")
                     result_log["filled_fields"].append(key)
                 elif input_type == "radio":
                     radio_value = field.evaluate("el => el.value")
                     if radio_value == value:
                         field.check()
-                        logger.debug(f"[autofill] ✅ Checked radio for '{label.strip()}' as '{key}'")
+                        logger.debug(f"[autofill] ✅ Checked radio for '{label_text}' as '{key}'")
                         result_log["filled_fields"].append(key)
                 elif input_type == "file":
                     if not os.path.isfile(value):
                         logger.warning(f"[autofill] ❌ File not found: {value}")
                         continue
                     field.set_input_files(value)
-                    logger.debug(f"[autofill] ✅ Uploaded file for '{label.strip()}' as '{key}'")
+                    logger.debug(f"[autofill] ✅ Uploaded file for '{label_text}' as '{key}'")
                     result_log["uploaded_files"][key] = [value]
                     result_log["filled_fields"].append(key)
-                    
-                    if "resume" in label.lower():
+
+                    if "resume" in label_text.lower():
                         self.uploaded_resume_path = value
-                    elif "cover" in label.lower():
+                    elif "cover" in label_text.lower():
                         self.uploaded_cover_letter_path = value
                 else:
                     field.fill(value)
-                    logger.debug(f"[autofill] ✅ Filled '{label.strip()}' as '{key}' with type '{input_type or tag_name}'")
+                    logger.debug(f"[autofill] ✅ Filled '{label_text}' as '{key}' with type '{input_type or tag_name}'")
                     result_log["filled_fields"].append(key)
             except Exception as e:
-                logger.error(f"[autofill] ⚠️ Failed to handle field '{label.strip()}': {e}")
-                result_log["errors"].append(f"{label.strip()} → {str(e)}")
+                logger.error(f"[autofill] ⚠️ Failed to handle field '{label_text}': {e}")
+                result_log["errors"].append(f"{label_text} → {str(e)}")
+
         
     def extract_field_label(self, field, page):
         try: 
@@ -243,13 +232,44 @@ class PlaywrightAutofiller:
         except Exception as e:
             logger.error(e)
     
-    def _is_essay_field(self, field) -> bool:
+    def _is_essay_field(self, field, label_text:str) -> bool:
+        tag_name = field.evaluate("el => el.tagName.toLowerCase()")
+        input_type = (field.get_attribute("type") or "").lower()
+        label_text = (label_text or "").strip().lower()
+        
+        logger.debug(f"[essay-check] Normalized label text = '{label_text}'")
+        
+        if tag_name == "select" or input_type in {"checkbox", "radio"}:
+            logger.debug(f"[essay-check] ⛔ Excluded due to input type: {tag_name} / {input_type}")
+            return False
+        
+        NON_ESSAY_TERMS = {
+            "gender", "race", "ethnicity", "location", "veteran",
+            "disability", "pronouns", "status", "hispanic", "latino"
+        }
+
+        logger.debug(f"[essay-check] Comparing against: {NON_ESSAY_TERMS}")
+
         try:
+            label_text = (label_text or "").strip().lower().replace("?", "").replace("*", "")
+            tokens = set(label_text.split())
+
+            logger.debug(f"[essay-check] Tokens = {tokens}, Checking intersection with: {NON_ESSAY_TERMS}")
+            logger.debug(f"[essay-check] Raw label_text passed in: {label_text}")
+
+            if tokens & set(NON_ESSAY_TERMS):
+                logger.debug(f"[essay-check] ⛔ Excluded due to token match: {tokens & set(NON_ESSAY_TERMS)} in label '{label_text}'")
+                return False
+
+            if any(keyword in label_text for keyword in ["why", "tell us", "describe", "motivate", "goals"]):
+                logger.debug(f"[essay-check] ✅ Label keyword match: '{label_text}'")
+                return True
+
             maxlength = field.get_attribute("maxlength")
             rows = field.get_attribute("rows")
             cols = field.get_attribute("cols")
-            
-            logger.debug(f"[essay-check] maxlength={maxlength}, rows={rows}, cols={cols}")
+
+            logger.debug(f"[essay-check] Checking structural heuristics → maxlength={maxlength}, rows={rows}, cols={cols}")
 
             return (
                 (maxlength and int(maxlength) >= 200) or
@@ -257,9 +277,8 @@ class PlaywrightAutofiller:
                 (cols and int(cols) >= 40)
             )
         except Exception as e:
-            logger.warning(f"[essay-check] Failed to evaluate textarea heuristics: {e}")
+            logger.warning(f"[essay-check] ⚠️ Failed to evaluate textarea heuristics: {e}")
             return False
-    
             
     def generate_essay_response(self, label, application_data) -> Optional[str]:
         try:
@@ -276,3 +295,9 @@ class PlaywrightAutofiller:
         except Exception as e:
             logger.error(f"[essay-generation] GPT failed: {e}")
             return None
+    def handle_voluntary_demographics(self, label: str) -> Optional[str]:
+        keywords = {"gender", "veteran", "disability", "ethnicity", "race", "hispanic", "latino"}
+        if any(word in label.lower() for word in keywords):
+            logger.debug(f"[voluntary] 🚫 Skipping voluntary demographic field: '{label}'")
+            return "skip"
+        return None
