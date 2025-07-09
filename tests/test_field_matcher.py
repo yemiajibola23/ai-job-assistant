@@ -8,6 +8,10 @@ def test_match_label_to_resume_key():
     assert match_label_to_key("   FULL   name   ") == "name"
     assert match_label_to_key("contact-email!") == "email"
     assert match_label_to_key("Random Unmatched Label") is None
+    assert match_label_to_key("Gender") == "gender"
+    assert match_label_to_key("Are you Hispanic/Latino?") == "ethnicity"
+    assert match_label_to_key("Veteran Status") == "veteran_status"
+    assert match_label_to_key("Disability Status") == "disability_status"
     
 def test_rule_matching_full_name():
     assert match_label_to_key("Full Name") == "name"
@@ -23,4 +27,5 @@ def test_fuzzy_matching_contact_email():
     
 def test_embedding_matching():
    assert match_label_to_key("Your online CV") == "resume"
+
 
