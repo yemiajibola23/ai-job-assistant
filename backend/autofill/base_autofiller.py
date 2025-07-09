@@ -56,7 +56,7 @@ class BaseAutofiller:
         
         return False
     
-    def _match_fields(self) -> list[tuple[Any, str]]:
+    def _match_fields(self) -> list[tuple[Any, str, str]]:
         fields = self.page.query_selector_all("input, textarea, select")
         matched_fields = []
         for field in fields:

@@ -12,14 +12,10 @@ def load_user_profile():
     
 profile_data = load_user_profile()
 application_data = {
-    **profile_data,
-    "first_name": profile_data.get("name", "").split()[0],
-    "last_name": profile_data.get("name", "").split()[-1],
-    "email": profile_data.get("email"),
-    "phone": profile_data.get("phone"),
-    "resume": "path/to/resume",
-    "cover_letter": "path/to/cover_letter"
-    }
+    "name": "Yemi Ajibola",
+    "email": "yemi@example.com",
+    "phone": "555-123-4567"
+}
 
 def run():
     with sync_playwright() as p:
