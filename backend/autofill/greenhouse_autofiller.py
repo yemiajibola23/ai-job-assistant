@@ -1,6 +1,6 @@
 from backend.autofill.base_autofiller import BaseAutofiller
 from backend.utils.logging import get_logger
-from typing import Any
+from typing import Any, Optional
 
 logger = get_logger(__name__)
 
@@ -37,10 +37,8 @@ class GreenhouseAutofiller(BaseAutofiller):
                 logger.error(f"[autofill] ❌ Failed to fill '{key}': {e}")
 
         # File uploads — handled explicitly
-        if (resume := self.application_data.get("resume_path")):
-            self._upload_file_field("resume", resume, result_log)
-        if (cover := self.application_data.get("cover_letter_path")):
-            self._upload_file_field("cover_letter", cover, result_log)
+        self._upload_file_field("resume", self.application_data.get("resume_path"), result_log)
+        self._upload_file_field("cover_letter", self.application_data.get("cover_letter_path"), result_log)
 
         # Voluntary self-identification fields
         # self._fill_voluntary_demographics()
@@ -69,19 +67,25 @@ class GreenhouseAutofiller(BaseAutofiller):
                 return
             
             parts = full_name.strip().split()
-            
             if "first" in label_text:
-                value = parts[0]
-                key = "first_name"
+                if parts:
+                    value = parts[0]
+                    key = "first_name"
+                else:
+                    result_log["skipped_fields"].append("first_name")
+                    return
+                
             elif "last" in label_text:
-                value = parts[1]
-                key = "last_name"
-            
-        
-        
+                if len(parts) > 1:
+                    value = parts[1]
+                    key = "last_name"
+                else:
+                    result_log["skipped_fields"].append("last_name")
+                    return
         if not value:
             logger.debug(f"[autofill] ⚠️ No value for text field '{key}'")
-            result_log["skipped_fields"].append(key)
+            if not key in result_log["skipped_fields"]:
+                result_log["skipped_fields"].append(key)
             return
         try:
             field.fill(value)
@@ -105,7 +109,12 @@ class GreenhouseAutofiller(BaseAutofiller):
             logger.error(f"[autofill] ❌ Failed to select '{key}': {e}")
             result_log["errors"].append(f"{key}: {str(e)}")
 
-    def _upload_file_field(self, key: str, path: str, result_log: dict[str, Any]):
+    def _upload_file_field(self, key: str, path: Optional[str], result_log: dict[str, Any]):
+        if not path:
+            logger.warning(f"[autofill] ⚠️ No file path provided for '{key}'")
+            if key not in result_log["skipped_fields"]:
+                result_log["skipped_fields"].append(key)
+            return
         file_input = (
             self.page.query_selector(f"input[type='file'][name='{key}']")
             or self.page.query_selector(f"input[type='file'][id*='{key}']")
@@ -121,6 +130,8 @@ class GreenhouseAutofiller(BaseAutofiller):
                result_log["errors"].append(f"{key}: {str(e)}")
         else:
             logger.warning(f"[Greenhouse] File input for {key} not found")
+            result_log["skipped_fields"].append(key)
+
 
     # def _fill_voluntary_demographics(self):
     #     voluntary_fields = {
