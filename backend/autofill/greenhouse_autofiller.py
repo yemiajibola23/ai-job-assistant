@@ -1,14 +1,19 @@
 from backend.autofill.base_autofiller import BaseAutofiller
 from backend.utils.logging import get_logger
 from typing import Any, Optional
-from backend.autofill.xpath_utils import get_labeled_field_xpath
+from backend.autofill.xpath_utils import get_labeled_field_xpath, resolve_greenhouse_field_xpath
 import json
 
 logger = get_logger(__name__)
 
 class GreenhouseAutofiller(BaseAutofiller):
     def fill(self) -> dict[str, Any]:
-        result_log= {
+        logger.info("[autofill] 🚦 Starting Greenhouse autofill...")
+        print("\n=== Application Data ===")
+        print(json.dumps(self.application_data, indent=2))
+        print("========================\n")
+
+        result_log = {
             "filled_fields": [],
             "skipped_fields": [],
             "uploaded_files": {},
@@ -16,104 +21,78 @@ class GreenhouseAutofiller(BaseAutofiller):
             "clicked_submit": False,
             "confirmation_found": False
         }
-        
-        for key, value in self.application_data.items():
-            label_guess = key.replace("_", " ").title()  # crude label guess like "full_name" → "Full Name"
-            filled = self._fill_field_by_xpath(label_guess, value)
-            result_log["filled_fields"].append(key)
-        
-        
+
+        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_timeout(2000)
+
+        labels = self.page.query_selector_all("label")
+        logger.debug(f"[autofill] 🏷️ Found {len(labels)} labels on the page")
+
+        for label in labels:
+            label_text = label.inner_text().strip()
+            if not label_text:
+                continue
+
+            logger.debug(f"[autofill] 🔍 Found label: '{label_text}'")
+            key, strategy = self.field_matcher.match(label_text, debug=True)
+            if not key or key not in self.application_data:
+                continue
+
+            value = self.application_data[key]
+            logger.debug(f"[autofill] 🧠 Matched label '{label_text}' → key: '{key}'")
+            logger.debug(f"[autofill] 📌 Using value '{value}' for key '{key}'")
+
+            field_type = "select" if key == "location" else "input"
+            filled = self._fill_field_by_xpath(label_text, value, field_type)
+            if filled:
+                result_log["filled_fields"].append(key)
+            else:
+                result_log["skipped_fields"].append(key)
+
         return result_log
-        
-    # def fill(self) -> dict[str, Any]:
-    #     
-    #     logger.info("[autofill] 🚦 Starting Greenhouse autofill...")
-    #     print("\n=== Application Data ===")
-    #     print(json.dumps(self.application_data, indent=2))
-    #     print("========================\n")
-        
-    #     # selects = self.page.query_selector_all("select")
-    #     # print(f"[debug] Found {len(selects)} <select> fields on page")
-    #     self.page.wait_for_load_state("networkidle")  # Waits for all network requests to settle
-    #     self.page.wait_for_timeout(2000)  # Optional: add slight delay for dynamic components
-        
-    #     matched_fields = self._match_fields()
-
-    #     # ✅ Prefer text over dropdown if same key appears twice
-    #     matched_fields = sorted(matched_fields, key=lambda t: 0 if t[2] == "text" else 1)
-    #     seen_keys = set()
-    #     deduped_fields = []
-    #     for field, key, field_type in matched_fields:
-    #         if key not in seen_keys:
-    #             seen_keys.add(key)
-    #             deduped_fields.append((field, key, field_type))
-
-    #     # 🪵 Optional debug output
-    #     for _, key, field_type in deduped_fields:
-    #         logger.debug(f"[fill] Preparing to fill {key} as {field_type}")
-
-    #     # 🔁 Proceed with de-duped fields
-    #     for field, key, field_type in deduped_fields:
-    #         try:
-    #             if field_type == "text":
-    #                 self._fill_text_field(field, key, result_log)
-    #             elif field_type == "dropdown":
-    #                 self._fill_custom_dropdown_field(field, key, result_log)
-    #             else:
-    #                 logger.warning(f"[autofill] 🤷‍♂️ Unknown field type for key={key}")
-    #         except Exception as e:
-    #             logger.error(f"[autofill] ❌ Failed to fill '{key}': {e}")
-
-
-    #     # File uploads — handled explicitly
-    #     self._upload_file_field("resume", self.application_data.get("resume"), result_log)
-    #     self._upload_file_field("cover_letter", self.application_data.get("cover_letter"), result_log)
-
-    #     # Voluntary self-identification fields
-    #     # self._fill_voluntary_demographics()
-
-    #     # Handle multi-step “Next” buttons until final page
-    #     while self._click_next_if_available():
-    #         pass
-
-    #     clicked = self._submit_application()
-    #     result_log["clicked_submit"] = clicked
-        
-    #     self.page.wait_for_timeout(3000)
-    #     result_log["confirmation_found"] = self._check_for_submission_confirmation()
-    #     return result_log
     
-    
-    
-
     def _fill_field_by_xpath(self, label_text: str, value: str, field_type: str = "input") -> bool:
         """
-        Fills a form field identified by its label using XPath.
+        Fills a form field identified by its label using XPath. Supports fallback for React-style select fields.
+        """
+        alt_xpath = resolve_greenhouse_field_xpath(self.page, label_text, field_type)
+        locator = None
 
-        Args:
-            label_text (str): The visible text of the label (e.g. "Phone").
-            value (str): The value to fill in (e.g. "555-1234").
-            field_type (str): The type of field ("input", "textarea", "select"). Defaults to "input".
-
-        Returns:
-            bool: True if field was found and filled successfully, False otherwise.
-    """
-        xpath = get_labeled_field_xpath(label_text, field_type)
-        locator = self.page.locator(f"xpath={xpath}")
+        if alt_xpath:
+            logger.debug(f"[xpath-fill] 🧭 Using Greenhouse ID XPath: {alt_xpath}")
+            locator = self.page.locator(f"xpath={alt_xpath}")
+        else:
+            xpath = get_labeled_field_xpath(label_text, field_type)
+            logger.debug(f"[xpath-fill] 🧭 Generated XPath for '{label_text}' ({field_type}): {xpath}")
+            locator = self.page.locator(f"xpath={xpath}")
 
         try:
             if locator.count() == 0:
+                # 🛠️ React Select Fallback
+                if field_type == "select":
+                    logger.debug("[xpath-fill] 🛠️ Trying React Select fallback for dropdown...")
+                    react_dropdowns = self.page.locator(".select__input")
+                    if react_dropdowns.count() > 0:
+                        react_dropdowns.first.click()
+                        self.page.keyboard.type(value)
+                        self.page.keyboard.press("Enter")
+                        logger.info(f"[xpath-fill] ✅ Filled React dropdown '{label_text}' with '{value}'")
+                        return True
+
                 logger.warning(f"[xpath-fill] 🚫 No field found for label '{label_text}'")
                 return False
 
-            locator.first.fill(value)
-            logger.info(f"[xpath-fill] ✅ Filled '{label_text}' with '{value}'")
+            if field_type == "select":
+                locator.first.select_option(value)
+            else:
+                locator.first.fill(value)
+
+            logger.info(f"[xpath-fill] ✅ Filled '{label_text}' with '{value}' using {field_type}")
             return True
 
         except Exception as e:
             logger.error(f"[xpath-fill] ❌ Failed to fill field for label '{label_text}': {e}")
             return False
-
 
     def _fill_text_field(self, field: Any, key: str, result_log: dict[str, Any]):
         value = self.application_data.get(key)

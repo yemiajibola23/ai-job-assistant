@@ -11,7 +11,8 @@ CANONICAL_KEYS = [
     "linkedin",
     "resume",
     "cover_letter",
-    "skills"
+    "skills",
+    "location"
 ]
 
 # 🧠 Rule-based string normalization map
@@ -37,4 +38,9 @@ LABEL_KEY_MAP: Dict[str, str] = {
     "attach cover letter": "cover_letter",
     "skills": "skills",
     "skillset": "skills",
+    "current location": "location",
+    "where are you currently located": "location",
+    "where are you currently located?": "location",
+    "where are you located": "location",
+    "current city": "location",
 }

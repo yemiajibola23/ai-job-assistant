@@ -14,7 +14,8 @@ profile_data = load_user_profile()
 application_data = {
     "name": "Yemi Ajibola",
     "email": "yemi@example.com",
-    "phone": "555-123-4567"
+    "phone": "555-123-4567",
+    "location": "United States"
 }
 
 def run():

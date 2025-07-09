@@ -24,37 +24,38 @@ class FieldMatcher:
         self.embedding_threshold = embedding_threshold
         self.key_embeddings = embed_texts(self.keys)
 
-    def match(self, label: str, debug: bool=False) -> Optional[str]:
+    def match(self, label: str, debug: bool=False) -> tuple[Optional[str], str]:
         normalized = normalize_label(label)
         
-        match = (
-            self._rule_based_match(normalized)
-            or self._regex_heuristics(normalized)
-            or self._embedding_match(normalized)
-            or self._fuzzy_match(normalized)
-        )
-        
-        if debug:
-            if match:
-                print(f"[matcher-debug] ✅ Matched '{label}' → '{match}'")
-            else:
+        for strategy_fn in [
+            self._rule_based_match,
+            self._regex_heuristics,
+            self._embedding_match,
+            self._fuzzy_match
+        ]:
+            key, strategy = strategy_fn(normalized)
+            if key:
+                if debug:
+                    print(f"[matcher-debug] ✅ Matched '{label}' → '{key}' via {strategy}")
+                return key, strategy
+            
+            if debug:
                 print(f"[matcher-debug] ❌ No match found for '{label}'")
+        return None, "none"
         
-        return match
-    
-    def _rule_based_match(self, normalized: str) -> Optional[str]:
-        return LABEL_KEY_MAP.get(normalized)
+    def _rule_based_match(self, normalized: str) -> tuple[Optional[str], str]:
+        return LABEL_KEY_MAP.get(normalized), "rule"
 
-    def _regex_heuristics(self, normalized: str) -> Optional[str]:
+    def _regex_heuristics(self, normalized: str) -> tuple[Optional[str], str]:
         if "linkedin" in normalized:
-            return "linkedin"
+            return "linkedin", "regex"
         if "resume" in normalized:
-            return "resume"
+            return "resume", "regex"
         if "cover" in normalized and "letter" in normalized:
-            return "cover_letter"
-        return None
+            return "cover_letter", "regex"
+        return None, "none"
 
-    def _embedding_match(self, label: str) -> Optional[str]:
+    def _embedding_match(self, label: str) -> tuple[Optional[str], str]:
         label_embedding = np.array(embed_texts([label])[0])
         similarities = cosine_similarity(
             np.array([label_embedding]), 
@@ -65,16 +66,15 @@ class FieldMatcher:
         best_key = self.keys[best_index]
 
         if best_score >= self.embedding_threshold:
-            return best_key
-        return None
+            return best_key, "embedding"
+        return None, "none"
 
-    def _fuzzy_match(self, normalized: str) -> Optional[str]:
+    def _fuzzy_match(self, normalized: str) -> tuple[Optional[str], str]:
         matches = get_close_matches(normalized, LABEL_KEY_MAP.keys(), n=1, cutoff=0.85)
         if matches:
-            return LABEL_KEY_MAP[matches[0]]
-        return None
-
-
+            return LABEL_KEY_MAP[matches[0]], "fuzzy"
+        return None, "none"
+    
 _matcher = FieldMatcher()
 
 def normalize_label(label: str) -> str:
@@ -85,4 +85,4 @@ def normalize_label(label: str) -> str:
     return label.strip()
 
 def match_label_to_key(label: str, debug: bool = True) -> Optional[str]:
-    return _matcher.match(label, debug)
+    return _matcher.match(label, debug)[0]
