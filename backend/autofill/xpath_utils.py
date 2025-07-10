@@ -88,4 +88,3 @@ async def try_fill_by_id(page, field_id: str, value: str, result_log) -> bool:
         logger.exception(f"❌ Failed to fill {field_id} via ID")
         result_log["errors"].append({field_id: str(e)})
         return False
-

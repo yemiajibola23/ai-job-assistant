@@ -6,6 +6,9 @@ from backend.autofill.xpath_utils import try_fill_by_id
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+RESUME_UPLOAD_BUTTON_XPATH = '//*[@id="application-form"]/div[1]/div[5]/div/div[2]/div/div[1]/div/button'
+COVER_LETTER_UPLOAD_BUTTON_XPATH = '//*[@id="application-form"]/div[1]/div[6]/div/div[2]/div/div[1]/div/button'
 class GreenhouseAutofiller(BaseAutofiller):
     async def fill_basic_info(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
         fields = ["first_name", "last_name", "phone", "email"]
@@ -75,8 +78,8 @@ class GreenhouseAutofiller(BaseAutofiller):
             result_log["errors"].append({f"{field_key}": str(e2)})
             
     async def upload_documents(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
-        await self.upload_file(page, "resume", data, '//*[@id="application-form"]/div[1]/div[5]/div/div[2]/div/div[1]/div/button', result_log)
-        await self.upload_file(page, "cover_letter", data, '//*[@id="application-form"]/div[1]/div[6]/div/div[2]/div/div[1]/div/button', result_log)    
+        await self.upload_file(page, "resume", data, RESUME_UPLOAD_BUTTON_XPATH, result_log)
+        await self.upload_file(page, "cover_letter", data, COVER_LETTER_UPLOAD_BUTTON_XPATH, result_log)    
     
     async def fill_voluntary_self_id(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
         pass

@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, call, patch
 from backend.autofill.greenhouse_autofiller import GreenhouseAutofiller
+from backend.utils.constants import EMPTY_RESULT_DICT
 
 @pytest.mark.asyncio
 async def test_fill_basic_info_fills_fields_correctly():
@@ -15,15 +16,8 @@ async def test_fill_basic_info_fills_fields_correctly():
         "phone": "555-1234",
     }
     
-    result= {
-        "filled_fields": [],
-        "skipped_fields": [],
-        "uploaded_files": {},
-        "errors": [],
-        "clicked_submit": False,
-        "confirmation_found": False
-    }
-
+    result= EMPTY_RESULT_DICT
+    
     # Act
     await autofiller.fill_basic_info(mock_page, data, result)
 
@@ -53,14 +47,7 @@ async def test_upload_documents_successfully_uploads_resume(mock_path_exists):
         "resume_path": "/path/to/resume"
     }
     
-    result= {
-        "filled_fields": [],
-        "skipped_fields": [],
-        "uploaded_files": {},
-        "errors": [],
-        "clicked_submit": False,
-        "confirmation_found": False
-    }
+    result= EMPTY_RESULT_DICT
         
     await autofiller.upload_documents(mock_page, data, result)
     
@@ -78,15 +65,8 @@ async def test_upload_documents_successfully_uploads_cover_letter(mock_exists):
     data = {
         "cover_letter_path": "/path/to/cover_letter"
     }
-
-    result = {
-        "filled_fields": [],
-        "skipped_fields": [],
-        "uploaded_files": {},
-        "errors": [],
-        "clicked_submit": False,
-        "confirmation_found": False
-    }
+    
+    result= EMPTY_RESULT_DICT
 
     # Act
     await autofiller.upload_documents(mock_page, data, result)
@@ -118,14 +98,7 @@ async def test_upload_documents_fallback_upload_cover_letter(mock_exists):
         "cover_letter_path": "/path/to/cover_letter"
     }
 
-    result = {
-        "filled_fields": [],
-        "skipped_fields": [],
-        "uploaded_files": {},
-        "errors": [],
-        "clicked_submit": False,
-        "confirmation_found": False
-    }
+    result= EMPTY_RESULT_DICT
 
     # Act
     await autofiller.upload_documents(mock_page, data, result)
@@ -157,14 +130,7 @@ async def test_upload_documents_fallback_upload_resume(mock_exists):
         "resume_path": "/path/to/resume"
     }
 
-    result = {
-        "filled_fields": [],
-        "skipped_fields": [],
-        "uploaded_files": {},
-        "errors": [],
-        "clicked_submit": False,
-        "confirmation_found": False
-    }
+    result = EMPTY_RESULT_DICT
 
     # Act
     await autofiller.upload_documents(mock_page, data, result)

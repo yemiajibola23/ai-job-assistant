@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any
 from playwright.async_api import Page
 from backend.utils.logging import get_logger
+from backend.utils.constants import EMPTY_RESULT_DICT
 
 logger = get_logger(__name__)
 class BaseAutofiller(ABC):
@@ -26,15 +27,7 @@ class BaseAutofiller(ABC):
         pass
     
     async def autofill(self, page: Page, data: Dict[str, Any]) -> Dict[str, Any]:
-        result = {
-            "filled_fields": [],
-            "skipped_fields": [],
-            "uploaded_files": {},
-            "errors": [],
-            "clicked_submit": False,
-            "confirmation_found": False
-        }
-
+        result = EMPTY_RESULT_DICT
         try:
             logger.info("🧾 Filling basic info...")
             await self.fill_basic_info(page, data, result)

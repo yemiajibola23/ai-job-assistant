@@ -11,3 +11,12 @@ APPLICATION_STATUSES = [
 
 DEFAULT_SCORE_THRESHOLD = 0.75
 TEST_RESUME_PATH = "tests/data/yemi_resume.pdf"
+
+EMPTY_RESULT_DICT =  {
+    "filled_fields": [],
+    "skipped_fields": [],
+    "uploaded_files": {},
+    "errors": [],
+    "clicked_submit": False,
+    "confirmation_found": False
+}

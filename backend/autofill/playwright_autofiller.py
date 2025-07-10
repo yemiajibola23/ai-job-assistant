@@ -6,6 +6,8 @@ from backend.utils.logging import get_logger
 from pathlib import Path
 import json
 from backend.generation.generators.essay_generator import EssayResponseGenerator
+from backend.utils.constants import EMPTY_RESULT_DICT
+
 logger = get_logger(__name__)
 class PlaywrightAutofiller:
     def __init__(self, job_url: str):
@@ -69,14 +71,7 @@ class PlaywrightAutofiller:
         
         
     def fill_form(self, application_data: dict, page: Optional[Any]=None, dry_run: bool=True) -> dict:
-        result_log = {
-            "filled_fields": [],
-            "skipped_fields": [],
-            "uploaded_files": {},
-            "errors": [],
-            "clicked_submit": False,
-            "confirmation_found": False
-        }
+        result_log = EMPTY_RESULT_DICT
         
         if page is None:
             with sync_playwright() as p:
