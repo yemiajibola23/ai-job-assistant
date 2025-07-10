@@ -1,6 +1,6 @@
 from backend.autofill.base_autofiller import BaseAutofiller
 from playwright.async_api import Page
-from typing import Dict, Any
+from typing import Dict, Any, Literal
 import logging
 from backend.autofill.xpath_utils import try_fill_by_id, get_labeled_field_xpath
 from pathlib import Path
@@ -122,10 +122,84 @@ class GreenhouseAutofiller(BaseAutofiller):
                 logger.error(f"❌ Fallback failed for {field}: {e}")
                 result_log["errors"].append({field: str(e)})
         
-        
+    
+    def classify_question_type(self, label_text: str, input_tag: str) -> Literal["basic", "essay", "dropdown"]:
+        if "why" in label_text.lower() or "describe" in label_text.lower() or input_tag == "textarea":
+            return "essay"
+        elif label_text.strip().lower() in LABEL_KEY_MAP:
+            return "basic"
+        else:
+            return "dropdown"
+
 
     async def fill_custom_questions(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
-        pass
+        label_elements = await page.query_selector_all("xpath=//*[starts-with(@id, 'question_') and contains(@id, '-label')]")
+
+        for label in label_elements:
+            label_text = ""
+            try:
+                label_id = await label.get_attribute("id")
+                if not label_id or not label_id.endswith("-label"):
+                    continue
+
+                field_id = label_id.replace("-label", "")
+                label_text = (await label.inner_text()).strip()
+
+                # Find input type by tag name
+                input_element = await page.query_selector(f'xpath=//*[@id="{field_id}"]')
+                if not input_element:
+                    logger.warning(f"⚠️ Could not find input field for {field_id}. Skipping.")
+                    result_log["skipped_fields"].append(field_id)
+                    continue
+                
+                tag_name = await input_element.evaluate("el => el.tagName.toLowerCase()")
+
+                # Dispatch
+                if "why" in label_text.lower() or "describe" in label_text.lower() or tag_name == "textarea":
+                    await self.handle_essay_custom_question(page, label_text, field_id, result_log)
+                elif label_text.strip().lower() in LABEL_KEY_MAP:
+                    await self.handle_basic_custom_question(page, label_text, field_id, data, result_log)
+                else:
+                    await self.handle_dropdown_custom_question(page, label_text, field_id, data, result_log)
+
+            except Exception as e:
+                logger.error(f"❌ Error classifying custom question '{label_text}': {e}")
+                result_log["errors"].append({label_text: str(e)})
+
 
     async def click_submit_if_valid(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
+        pass
+    
+    async def handle_basic_custom_question(self, page: Page, label_text: str, field_id: str, data: Dict[str, Any], result_log: Dict[str, Any]):
+        key = LABEL_KEY_MAP.get(label_text.strip().lower())
+        if not key:
+            logger.warning(f"⚠️ No canonical key found for label '{label_text}'. Skipping.")
+            result_log["skipped_fields"].append(label_text.strip())
+            return
+
+        value = data.get(key)
+        if not value:
+            logger.warning(f"⚠️ No value provided for key '{key}' (from label '{label_text}'). Skipping.")
+            result_log["skipped_fields"].append(key)
+            return
+
+        success = await try_fill_by_id(page, field_id, value, result_log)
+        if success:
+            result_log["filled_fields"].append(key)
+            return
+
+        # fallback
+        fallback_xpath = get_labeled_field_xpath(label_text, "input")
+        try:
+            await page.fill(f"xpath={fallback_xpath}", value)
+            logger.info(f"✅ Fallback filled basic question '{label_text}' with value: {value}")
+            result_log["filled_fields"].append(key)
+        except Exception as e:
+            logger.error(f"❌ Fallback failed for basic question '{label_text}': {e}")
+            result_log["errors"].append({key: str(e)})
+
+    async def handle_dropdown_custom_question(self, page: Page, label_text: str, field_id: str, data: Dict[str, Any], result_log: Dict[str, Any]):
+        pass
+
+    async def handle_essay_custom_question( self, page: Page, label_text: str, field_id: str, result_log: Dict[str, Any]):
         pass

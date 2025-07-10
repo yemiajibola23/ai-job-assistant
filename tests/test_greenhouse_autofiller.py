@@ -2,6 +2,8 @@ import pytest
 from unittest.mock import AsyncMock, call, patch
 from backend.autofill.greenhouse_autofiller import GreenhouseAutofiller
 from backend.utils.constants import EMPTY_RESULT_DICT
+import backend.autofill.field_matcher_config as matcher_config
+
 
 @pytest.mark.asyncio
 async def test_fill_basic_info_fills_fields_correctly():
@@ -189,3 +191,43 @@ async def test_fill_voluntary_self_id_uses_primary_path_for_normalized_value(moc
     mock_try_fill.assert_called_with(mock_page, "veteran_status", "I do not wish to answer", result)
     mock_page.fill.assert_not_called()
     assert "veteran_status" not in result["errors"]
+
+@pytest.mark.asyncio
+@patch("backend.autofill.greenhouse_autofiller.try_fill_by_id", return_value=True)
+async def test_fill_custom_questions_dispatches_basic_question(mock_try_fill):
+    # Arrange
+    autofiller = GreenhouseAutofiller()
+    mock_page = AsyncMock()
+
+    # Mock label
+    mock_label = AsyncMock()
+    mock_label.get_attribute.return_value = "question_123-label"
+    mock_label.inner_text.return_value = "LinkedIn Profile"
+
+    # Mock input
+    mock_input = AsyncMock()
+    mock_input.evaluate.return_value = "input"
+
+    mock_page.query_selector_all.return_value = [mock_label]
+    mock_page.query_selector.return_value = mock_input
+
+    data = {
+        "linkedin": "https://linkedin.com/in/test"
+    }
+
+    result = {
+        "filled_fields": [],
+        "skipped_fields": [],
+        "uploaded_files": {},
+        "errors": [],
+        "clicked_submit": False,
+        "confirmation_found": False
+    }
+
+    # Act
+    with patch.dict(matcher_config.LABEL_KEY_MAP, {"linkedin_profile": "linkedin"}):
+        await autofiller.fill_custom_questions(mock_page, data, result)
+
+    # Assert
+    mock_try_fill.assert_called_with(mock_page, "question_123", "https://linkedin.com/in/test", result)
+    assert "linkedin" in result["filled_fields"]
