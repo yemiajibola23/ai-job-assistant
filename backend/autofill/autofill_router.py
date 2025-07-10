@@ -12,19 +12,20 @@ def get_autofill_strategy(url: str) -> str:
         return "unsupported"
 
 def autofill_router(page, application_data, dry_run=True) -> None:
-    url = page.url
-    strategy = get_autofill_strategy(url)
-    logger.info(f"[autofill-router] 🔍 Detected ATS: {strategy} from URL: {url}")
+    pass
+    # url = page.url
+    # strategy = get_autofill_strategy(url)
+    # logger.info(f"[autofill-router] 🔍 Detected ATS: {strategy} from URL: {url}")
 
-    autofiller: BaseAutofiller
+    # autofiller: BaseAutofiller
     
-    if strategy == "greenhouse":
-        autofiller = GreenhouseAutofiller(page, application_data, dry_run)
-    else:
-        raise NotImplementedError(f"ATS strategy not yet implemented for URL: {url}")
+    # if strategy == "greenhouse":
+    #     autofiller = GreenhouseAutofiller(page, application_data, dry_run)
+    # else:
+    #     raise NotImplementedError(f"ATS strategy not yet implemented for URL: {url}")
     
-    result = autofiller.fill()
-    print("=== Result Log ===")
-    for key, val in result.items():
-        print(f"{key}: {val}")
+    # result = autofiller.fill()
+    # print("=== Result Log ===")
+    # for key, val in result.items():
+    #     print(f"{key}: {val}")
     
