@@ -1,24 +1,42 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, call
 from backend.autofill.greenhouse_autofiller import GreenhouseAutofiller
 
-@patch("backend.autofill.greenhouse_autofiller.get_labeled_field_xpath")
-def test_fill_field_by_xpath_success(mock_get_xpath):
+@pytest.mark.asyncio
+async def test_fill_basic_info_fills_fields_correctly():
     # Arrange
-    mock_page = MagicMock()
-    mock_locator = MagicMock()
-    mock_locator.count.return_value = 1
-    mock_locator.first.fill.return_value = None
+    mock_page = AsyncMock()
+    autofiller = GreenhouseAutofiller()
 
-    mock_page.locator.return_value = mock_locator
-    mock_get_xpath.return_value = "//label[contains(text(), 'Phone')]/following::input[1]"
-
-    autofiller = GreenhouseAutofiller(mock_page, {}, dry_run=True)
+    data = {
+        "first_name": "LeBron",
+        "last_name": "James",
+        "email": "lebron@example.com",
+        "phone": "555-1234",
+    }
+    
+    result= {
+        "filled_fields": [],
+        "skipped_fields": [],
+        "uploaded_files": {},
+        "errors": [],
+        "clicked_submit": False,
+        "confirmation_found": False
+    }
 
     # Act
-    result = autofiller._fill_field_by_xpath("Phone", "555-1234")
+    await autofiller.fill_basic_info(mock_page, data, result)
 
-    # Assert
-    assert result is True
-    mock_page.locator.assert_called_once()
-    mock_locator.first.fill.assert_called_once_with("555-1234")
+    # Assert: page.fill called with correct xpaths
+    calls = [
+        ("xpath=//*[@id=\"first_name\"]", "LeBron"),
+        ("xpath=//*[@id=\"last_name\"]", "James"),
+        ("xpath=//*[@id=\"email\"]", "lebron@example.com"),
+        ("xpath=//*[@id=\"phone\"]", "555-1234"),
+    ]
+    mock_page.fill.assert_has_calls([call(xpath, value) for xpath, value in calls], any_order=True)
+
+    # Assert: result updated
+    assert set(result["filled_fields"]) == {"first_name", "last_name", "email", "phone"}
+    assert result["skipped_fields"] == []
+    assert result["errors"] == []

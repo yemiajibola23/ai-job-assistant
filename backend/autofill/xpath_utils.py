@@ -1,4 +1,7 @@
 from typing import Optional
+from backend.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 def get_labeled_field_xpath(label_text: str, field_type:str) -> str:
     """
@@ -68,4 +71,21 @@ def resolve_greenhouse_field_xpath(page, label_text: str, field_type: str) -> Op
         )
     else:
         return f"//*[@id='{container_id}']//{field_type}"
+
+
+async def try_fill_by_id(page, field_id: str, value: str, result_log) -> bool:
+    """
+    Attempts to fill an input field by ID.
+    Returns True if successful, False otherwise.
+    """
+    xpath = f'//*[@id="{field_id}"]'
+    try:
+        await page.fill(f'xpath={xpath}', value)
+        logger.info(f"✅ Filled {field_id} with value: {value}")
+        result_log["filled_fields"].append(field_id)
+        return True
+    except Exception as e:
+        logger.exception(f"❌ Failed to fill {field_id} via ID")
+        result_log["errors"].append({field_id: str(e)})
+        return False
 
