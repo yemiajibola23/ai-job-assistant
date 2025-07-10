@@ -3,6 +3,7 @@ from typing import Dict, Any
 from playwright.async_api import Page
 from backend.utils.logging import get_logger
 from backend.utils.constants import EMPTY_RESULT_DICT
+from backend.utils.screenshot import take_screenshot
 
 logger = get_logger(__name__)
 class BaseAutofiller(ABC):
@@ -26,7 +27,7 @@ class BaseAutofiller(ABC):
     async def click_submit_if_valid(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
         pass
     
-    async def autofill(self, page: Page, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def autofill(self, page: Page, data: Dict[str, Any], dry_run=True) -> Dict[str, Any]:
         result = EMPTY_RESULT_DICT
         try:
             logger.info("🧾 Filling basic info...")
@@ -34,15 +35,19 @@ class BaseAutofiller(ABC):
 
             logger.info("📄 Uploading documents...")
             await self.upload_documents(page, data, result)
-
-            logger.info("🧬 Filling voluntary self-ID...")
-            await self.fill_voluntary_self_id(page, data, result)
-
+            
             logger.info("❓ Filling custom questions...")
             await self.fill_custom_questions(page, data, result)
 
-            logger.info("🚀 Submitting if valid...")
-            await self.click_submit_if_valid(page, data, result)
+            logger.info("🧬 Filling voluntary self-ID...")
+            await self.fill_voluntary_self_id(page, data, result)
+            
+            if not dry_run:
+                logger.info("🚀 Submitting if valid...")
+                await self.click_submit_if_valid(page, data, result)
+            else:
+                await take_screenshot(page)
+                logger.info("Dry run detected, not submitting...")
 
         except Exception as e:
             logger.exception(f"❌ Autofill failed: {e}")

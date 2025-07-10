@@ -55,7 +55,7 @@ VALUE_NORMALIZATION = {
         "decline to self-identify": "I do not wish to answer",
         "i do not wish to answer": "I do not wish to answer",
     },
-    "ethnicity": {
+    "hispanic_ethnicity": {
         "prefer not to say": "I do not wish to answer",
         "decline to self-identify": "I do not wish to answer",
         "i do not wish to answer": "I do not wish to answer",
