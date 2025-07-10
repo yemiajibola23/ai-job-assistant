@@ -75,11 +75,6 @@ async def test_upload_documents_successfully_uploads_cover_letter(mock_exists):
     mock_page.set_input_files.assert_called_with('input#cover_letter', "/path/to/cover_letter")
     assert result["uploaded_files"]["cover_letter"] == "/path/to/cover_letter"
     
-    
-    import pytest
-from unittest.mock import AsyncMock, patch, call
-from backend.autofill.greenhouse_autofiller import GreenhouseAutofiller
-
 @pytest.mark.asyncio
 @patch("backend.autofill.greenhouse_autofiller.Path.exists", return_value=True)
 async def test_upload_documents_fallback_upload_cover_letter(mock_exists):
@@ -142,3 +137,55 @@ async def test_upload_documents_fallback_upload_resume(mock_exists):
         call('input[type="file"]', "/path/to/resume")
     ])
     assert result["uploaded_files"]["resume"] == "/path/to/resume"
+
+@pytest.mark.asyncio
+@patch("backend.autofill.greenhouse_autofiller.try_fill_by_id", return_value=False)
+@patch("backend.autofill.greenhouse_autofiller.get_labeled_field_xpath", return_value="//*[@id='veteran_status_fallback']")
+@patch("backend.autofill.greenhouse_autofiller.Path.exists", return_value=True)
+async def test_fill_voluntary_self_id_normalizes_value_and_falls_back(mock_exists, mock_xpath, mock_try_fill):
+    # Arrange
+    mock_page = AsyncMock()
+    autofiller = GreenhouseAutofiller()
+
+    data = {
+        "veteran_status": "Prefer not to say"
+    }
+
+    result = EMPTY_RESULT_DICT
+
+    # Act
+    await autofiller.fill_voluntary_self_id(mock_page, data, result)
+
+    # Assert fallback fill was called with normalized value
+    mock_page.fill.assert_called_with("xpath=//*[@id='veteran_status_fallback']", "I do not wish to answer")
+    assert "veteran_status" in result["filled_fields"]
+
+
+@pytest.mark.asyncio
+@patch("backend.autofill.greenhouse_autofiller.try_fill_by_id", return_value=True)
+@patch("backend.autofill.greenhouse_autofiller.Path.exists", return_value=True)
+async def test_fill_voluntary_self_id_uses_primary_path_for_normalized_value(mock_exists, mock_try_fill):
+    # Arrange
+    mock_page = AsyncMock()
+    autofiller = GreenhouseAutofiller()
+
+    data = {
+        "veteran_status": "Prefer not to say"
+    }
+
+    result = {
+        "filled_fields": [],
+        "skipped_fields": [],
+        "uploaded_files": {},
+        "errors": [],
+        "clicked_submit": False,
+        "confirmation_found": False
+    }
+
+    # Act
+    await autofiller.fill_voluntary_self_id(mock_page, data, result)
+
+    # Assert: primary path was taken
+    mock_try_fill.assert_called_with(mock_page, "veteran_status", "I do not wish to answer", result)
+    mock_page.fill.assert_not_called()
+    assert "veteran_status" not in result["errors"]

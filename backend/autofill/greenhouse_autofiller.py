@@ -2,8 +2,9 @@ from backend.autofill.base_autofiller import BaseAutofiller
 from playwright.async_api import Page
 from typing import Dict, Any
 import logging
-from backend.autofill.xpath_utils import try_fill_by_id
+from backend.autofill.xpath_utils import try_fill_by_id, get_labeled_field_xpath
 from pathlib import Path
+from backend.autofill.field_matcher_config import LABEL_KEY_MAP, VALUE_NORMALIZATION
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,46 @@ class GreenhouseAutofiller(BaseAutofiller):
         await self.upload_file(page, "cover_letter", data, COVER_LETTER_UPLOAD_BUTTON_XPATH, result_log)    
     
     async def fill_voluntary_self_id(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
-        pass
+        fields = ["gender", "veteran_status", "disability_status", "hispanic_ethnicity"]
+        
+        for field in fields:
+            raw_value = data.get(field)
+            if not raw_value:
+                logger.warning(f"⚠️ No value provided for {field}. Skipping.")
+                result_log["skipped_fields"].append(field)
+                continue
+            
+            value = VALUE_NORMALIZATION.get(field, {}).get(raw_value.lower(), raw_value)
+            if not value:
+                logger.warning(f"⚠️ Normalized value for {field} is empty. Skipping.")
+                result_log["skipped_fields"].append(field)
+                continue
+
+            success = await try_fill_by_id(page, field, value, result_log)
+            if success:
+                continue  # ✅ done
+            
+            # 🪂 Fallback using label-based XPath
+            label_text = next(
+                (label for label, canonical in LABEL_KEY_MAP.items() if canonical == field),
+                field.replace("_", " ").title()
+            )
+            fallback_xpath = get_labeled_field_xpath(label_text, "input")
+            
+            if not fallback_xpath:
+                logger.error(f"❌ No fallback XPath generated for {field}")
+                result_log["errors"].append({field: "Missing fallback XPath"})
+                continue
+            
+            try:
+                await page.fill(f"xpath={fallback_xpath}", value)
+                logger.info(f"✅ Fallback filled {field} using label '{label_text}'.")
+                result_log["filled_fields"].append(field)
+            except Exception as e:
+                logger.error(f"❌ Fallback failed for {field}: {e}")
+                result_log["errors"].append({field: str(e)})
+        
+        
 
     async def fill_custom_questions(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
         pass
