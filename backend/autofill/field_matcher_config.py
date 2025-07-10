@@ -48,3 +48,26 @@ LABEL_KEY_MAP: Dict[str, str] = {
     "veteran status": "veteran_status",
     "disability status": "disability_status",
 }
+
+VALUE_NORMALIZATION = {
+    "gender": {
+        "prefer not to say": "I do not wish to answer",
+        "decline to self-identify": "I do not wish to answer",
+        "i do not wish to answer": "I do not wish to answer",
+    },
+    "ethnicity": {
+        "prefer not to say": "I do not wish to answer",
+        "decline to self-identify": "I do not wish to answer",
+        "i do not wish to answer": "I do not wish to answer",
+    },
+    "veteran_status": {
+        "prefer not to say": "I do not wish to answer",
+        "decline to self-identify": "I do not wish to answer",
+        "i do not wish to answer": "I do not wish to answer",
+    },
+    "disability_status": {
+        "prefer not to say": "I do not wish to answer",
+        "decline to self-identify": "I do not wish to answer",
+        "i do not wish to answer": "I do not wish to answer",
+    },
+}

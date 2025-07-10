@@ -15,7 +15,12 @@ application_data = {
     "name": "Yemi Ajibola",
     "email": "yemi@example.com",
     "phone": "555-123-4567",
-    "location": "United States"
+    "location": "United States",
+    "linkedin": "https://linkedin.com/in/blah-blah",
+    "veteran_status": "Prefer not to say",
+    "ethnicity": "Prefer not to say",
+    "gender": "Male",
+    "disability_status": "Prefer not to say",
 }
 
 def run():

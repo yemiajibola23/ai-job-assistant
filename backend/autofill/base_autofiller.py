@@ -9,6 +9,14 @@ class BaseAutofiller:
         self.application_data = application_data
         self.dry_run = dry_run
         self.field_matcher = FieldMatcher()
+        self.result_log = {
+            "filled_fields": [],
+            "skipped_fields": [],
+            "uploaded_files": {},
+            "errors": [],
+            "clicked_submit": False,
+            "confirmation_found": False
+        }
             
     def fill(self) -> dict[str, Any]:
         raise NotImplementedError("Subclasses must implement fill().")
