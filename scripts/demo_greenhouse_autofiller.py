@@ -20,7 +20,7 @@ async def run():
 
         print("🌐 Navigating to Greenhouse job form...")
         await page.goto("https://job-boards.greenhouse.io/speechify/jobs/5411578004")
-        await page.wait_for_load_state("networkidle")
+        await page.wait_for_selector('button:has-text("Attach")', timeout=10000)
 
         print("🤖 Running autofill (dry-run)...")
         autofiller = GreenhouseAutofiller()

@@ -44,7 +44,7 @@ LABEL_KEY_MAP: Dict[str, str] = {
     "where are you located": "location",
     "current city": "location",
     "gender": "gender",
-    "are you hispanic/latino?": "ethnicity",
+    "are you hispanic/latino?": "hispanic_ethnicity",
     "veteran status": "veteran_status",
     "disability status": "disability_status",
 }

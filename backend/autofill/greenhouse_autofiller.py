@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 RESUME_UPLOAD_BUTTON_XPATH = '//*[@id="application-form"]/div[1]/div[5]/div/div[2]/div/div[1]/div/button'
 COVER_LETTER_UPLOAD_BUTTON_XPATH = '//*[@id="application-form"]/div[1]/div[6]/div/div[2]/div/div[1]/div/button'
 BASIC_INFO_FIELDS = ["name", "first_name", "last_name", "email", "phone", "location"]
+VOLUNTARY_SELF_ID_FIELDS = ["gender", "veteran_status", "disability_status", "hispanic_ethnicity"]
 
 class GreenhouseAutofiller(BaseAutofiller):
     async def fill_basic_info(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
@@ -23,13 +24,15 @@ class GreenhouseAutofiller(BaseAutofiller):
                     logger.info(f"🔍 Attempting to fill full name using: {value}")
 
                     for full_name_id in ["name", "full_name", "candidate_name"]:
-                        try:
-                            await page.fill(f'xpath=//*[@id="{full_name_id}"]', value)
+                        selector = f'xpath=//*[@id="{full_name_id}"]'
+                        full_name_input = await page.query_selector(selector)
+                        if full_name_input:
+                            await full_name_input.fill(value)
                             logger.info(f"✅ Filled full name field '{full_name_id}' with value: {value}")
                             result_log["filled_fields"].append("name")
                             break
-                        except Exception as e:
-                            logger.debug(f"🕳️ Could not fill '{full_name_id}' as full name field: {e}")
+                        else:
+                            logger.debug(f"🕳️ Could not fill '{full_name_id}' as full name field.")
                 continue  # Skip to next field after attempting full name
             else:
                 logger.warning("⚠️ Could not locate a suitable full name field. Skipping 'name'.")
@@ -43,8 +46,6 @@ class GreenhouseAutofiller(BaseAutofiller):
 
             await try_fill_by_id(page, field, value, result_log)
         
-                       
-          
              #//*[@id="first_name-label"]
              #//*[@id="first_name"]
              
@@ -104,10 +105,8 @@ class GreenhouseAutofiller(BaseAutofiller):
         await self.upload_file(page, "resume", data, RESUME_UPLOAD_BUTTON_XPATH, result_log)
         await self.upload_file(page, "cover_letter", data, COVER_LETTER_UPLOAD_BUTTON_XPATH, result_log)    
     
-    async def fill_voluntary_self_id(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
-        fields = ["gender", "veteran_status", "disability_status", "hispanic_ethnicity"]
-        
-        for field in fields:
+    async def fill_voluntary_self_id(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):        
+        for field in VOLUNTARY_SELF_ID_FIELDS:
             raw_value = data.get(field)
             if not raw_value:
                 logger.warning(f"⚠️ No value provided for {field}. Skipping.")
