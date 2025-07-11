@@ -1,5 +1,6 @@
 from typing import Optional
 from backend.utils.logging import get_logger
+from typing import Dict, Any
 
 logger = get_logger(__name__)
 
@@ -73,18 +74,32 @@ def resolve_greenhouse_field_xpath(page, label_text: str, field_type: str) -> Op
         return f"//*[@id='{container_id}']//{field_type}"
 
 
-async def try_fill_by_id(page, field_id: str, value: str, result_log) -> bool:
+async def try_fill_by_id(page, field_id: str, value: str, result_log: Dict[str, Any]) -> bool:
     """
-    Attempts to fill an input field by ID.
+    Attempts to fill a field by ID using either a regular input or React Select.
     Returns True if successful, False otherwise.
     """
     xpath = f'//*[@id="{field_id}"]'
+    selector = f'xpath={xpath}'
+
     try:
-        await page.fill(f'xpath={xpath}', value)
-        logger.info(f"✅ Filled {field_id} with value: {value}")
+        await page.click(selector)
+        await page.fill(selector, value)
+        # await page.wait_for_timeout(200)
+        await page.keyboard.press("Enter")
+        # await page.wait_for_timeout(200)
+
+        logger.info(f"✅ React Select filled {field_id} with value: {value}")
         result_log["filled_fields"].append(field_id)
         return True
-    except Exception as e:
-        logger.exception(f"❌ Failed to fill {field_id} via ID")
-        result_log["errors"].append({field_id: str(e)})
+    except Exception as e2:
+        logger.error(f"❌ Failed to fill {field_id} via both methods: {e2}")
+        result_log["errors"].append({field_id: str(e2)})
         return False
+    
+    # Optional: Verify value locked in (if react-select)
+    # element = await page.query_selector(selector)
+    # selected_text = await element.input_value()
+    # if selected_text and value.lower() not in selected_text.lower():
+    #     logger.warning(f"⚠️ Field '{field_id}' may not have been locked in. Found: '{selected_text}'")
+

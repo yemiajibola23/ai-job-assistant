@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 RESUME_UPLOAD_BUTTON_XPATH = '//*[@id="application-form"]/div[1]/div[5]/div/div[2]/div/div[1]/div/button'
 COVER_LETTER_UPLOAD_BUTTON_XPATH = '//*[@id="application-form"]/div[1]/div[6]/div/div[2]/div/div[1]/div/button'
 BASIC_INFO_FIELDS = ["name", "first_name", "last_name", "email", "phone", "location"]
-VOLUNTARY_SELF_ID_FIELDS = ["gender", "veteran_status", "disability_status", "hispanic_ethnicity"]
+VOLUNTARY_SELF_ID_FIELDS = ["gender", "hispanic_ethnicity", "veteran_status", "disability_status"]
 
 class GreenhouseAutofiller(BaseAutofiller):
     async def fill_basic_info(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
@@ -36,7 +36,7 @@ class GreenhouseAutofiller(BaseAutofiller):
                 continue  # Skip to next field after attempting full name
             else:
                 logger.warning("⚠️ Could not locate a suitable full name field. Skipping 'name'.")
-                result_log["skipped_fields"].append("name")
+                # result_log["skipped_fields"].append("name")
             
             value = data.get(field)
             if not value:
@@ -107,6 +107,7 @@ class GreenhouseAutofiller(BaseAutofiller):
     
     async def fill_voluntary_self_id(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):        
         for field in VOLUNTARY_SELF_ID_FIELDS:
+            await page.wait_for_timeout(5000)
             raw_value = data.get(field)
             if not raw_value:
                 logger.warning(f"⚠️ No value provided for {field}. Skipping.")
@@ -123,11 +124,12 @@ class GreenhouseAutofiller(BaseAutofiller):
             if success:
                 continue  # ✅ done
             
-            # 🪂 Fallback using label-based XPath
             label_text = next(
                 (label for label, canonical in LABEL_KEY_MAP.items() if canonical == field),
                 field.replace("_", " ").title()
             )
+            
+            # 🪂 Fallback using label-based XPath
             fallback_xpath = get_labeled_field_xpath(label_text, "input")
             
             if not fallback_xpath:
@@ -222,5 +224,5 @@ class GreenhouseAutofiller(BaseAutofiller):
     async def handle_dropdown_custom_question(self, page: Page, label_text: str, field_id: str, data: Dict[str, Any], result_log: Dict[str, Any]):
         pass
 
-    async def handle_essay_custom_question( self, page: Page, label_text: str, field_id: str, result_log: Dict[str, Any]):
+    async def handle_essay_custom_question(self, page: Page, label_text: str, field_id: str, result_log: Dict[str, Any]):
         pass
