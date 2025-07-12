@@ -16,6 +16,7 @@ EMPTY_RESULT_DICT =  {
     "filled_fields": [],
     "skipped_fields": [],
     "uploaded_files": {},
+    "essays_filled": {},
     "errors": [],
     "clicked_submit": False,
     "confirmation_found": False
