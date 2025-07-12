@@ -233,6 +233,9 @@ class GreenhouseAutofiller(BaseAutofiller):
             essay_data = self.get_esssay_data(job_data, label_text)
             # 1. Generate response using GPT
             response =  self.essay_generator.generate(essay_data)
+            if not response or len(response.strip()) < 10:
+                raise ValueError("GPT returned empty or insufficient response")
+            
             # 2. Fill the field
             selector = f'xpath=//*[@id="{field_id}"]'
             await page.fill(selector, response)
@@ -249,7 +252,13 @@ class GreenhouseAutofiller(BaseAutofiller):
             logger.info(f"✍️ Essay filled for {label_text[:40]}...")
         except Exception as e:
             logger.error(f"❌ Error filling essay question '{label_text}': {e}")
-            result_log["errors"].append({label_text: str(e)})
+            result_log["skipped_fields"].append(label_text)
+            result_log["errors"].append({
+                "field_id": field_id,
+                "label": label_text,
+                "error": str(e),
+                "source": "essay_gpt"
+            })
             
             
     def get_esssay_data(self, job_data: Dict[str, Any], label_text: str) -> Dict[str, Any]:

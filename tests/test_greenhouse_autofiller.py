@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, call, patch, MagicMock
 from backend.autofill.greenhouse_autofiller import GreenhouseAutofiller
 from backend.utils.constants import EMPTY_RESULT_DICT
 import backend.autofill.field_matcher_config as matcher_config
+import copy
 
 
 @pytest.mark.asyncio
@@ -202,7 +203,8 @@ async def test_fill_custom_questions_dispatches_basic_question(mock_try_fill):
 async def test_handle_essay_custom_question_fills_textarea():
     # Arrange
     mock_gpt = MagicMock()
-    mock_gpt.generate.return_value = "I'm excited to join because..."
+    answer = "I'm excited to join because it's a cool place to work."
+    mock_gpt.generate.return_value = answer
 
     autofiller = GreenhouseAutofiller(gpt_client=mock_gpt)
     
@@ -215,6 +217,7 @@ async def test_handle_essay_custom_question_fills_textarea():
     
     label_text = "Why do you want to work here?"
     field_id = "question_123"
+    xpath = f'xpath=//*[@id="{field_id}"]'
     
     job_data = {
         "job_descriptionn": "Test job description",
@@ -225,12 +228,86 @@ async def test_handle_essay_custom_question_fills_textarea():
     await autofiller.handle_essay_custom_question(mock_page, label_text, field_id, job_data, result_log)
     
     # Assert
-    mock_page.fill.assert_awaited_once_with(f'xpath=//*[@id="{field_id}"]', "I'm excited to join because...")
+    mock_page.fill.assert_awaited_once_with(xpath, answer)
     mock_page.keyboard.press.assert_awaited_once_with("Enter")
 
     assert label_text in result_log["filled_fields"]
     assert {
         "field_id": field_id,
         "essay_question": label_text,
-        "response": "I'm excited to join because..."
+        "response": answer
     } in result_log["essays_filled"]
+
+@pytest.mark.asyncio
+async def test_handle_essay_custom_question_handles_gpt_failure():
+    # Arrange
+    mock_gpt = MagicMock()
+    mock_gpt.generate.side_effect = RuntimeError("Simulated GPT failure")
+
+    autofiller = GreenhouseAutofiller(gpt_client=mock_gpt)
+    mock_page = AsyncMock()
+    mock_page.fill = AsyncMock()
+    mock_page.keyboard.press = AsyncMock()
+
+    result_log = EMPTY_RESULT_DICT
+
+    label_text = "Why do you want to work here?"
+    field_id = "question_123"
+    data = {
+        "resume_path": "tests/data/yemi_resume.pdf",
+        "job_title": "Senior iOS Engineer",
+        "company_name": "Flock Safety",
+        "job_description": "Great company"
+    }
+
+    # Act
+    await autofiller.handle_essay_custom_question(mock_page, label_text, field_id, data, result_log)
+
+    # Assert
+    mock_page.fill.assert_not_called()
+    mock_page.keyboard.press.assert_not_called()
+
+    assert {
+        "field_id": field_id,
+        "label": label_text,
+        "error": "Simulated GPT failure",
+        "source": "essay_gpt"
+    } in result_log["errors"]
+
+
+@pytest.mark.asyncio
+async def test_handle_essay_custom_question_handles_short_or_empty_response():
+    # Arrange
+    mock_gpt = MagicMock()
+    mock_gpt.generate.return_value ="idk"
+
+    autofiller = GreenhouseAutofiller(gpt_client=mock_gpt)
+    mock_page = AsyncMock()
+    mock_page.fill = AsyncMock()
+    mock_page.keyboard.press = AsyncMock()
+
+    result_log = copy.deepcopy(EMPTY_RESULT_DICT)
+
+    label_text = "Why do you want to work here?"
+    field_id = "question_123"
+     
+    job_data = {
+        "resume_path": "tests/data/yemi_resume.pdf",
+        "job_title": "Senior iOS Engineer",
+        "company_name": "Flock Safety",
+        "job_description": "Great company"
+    }
+
+    # Act
+    await autofiller.handle_essay_custom_question(mock_page, label_text, field_id, job_data, result_log)
+
+    # Assert
+    mock_page.fill.assert_not_called()
+    mock_page.keyboard.press.assert_not_called()
+
+    assert {
+        "field_id": field_id,
+        "label": label_text,
+        "error": "GPT returned empty or insufficient response",
+        "source": "essay_gpt"
+    } in result_log["errors"]
