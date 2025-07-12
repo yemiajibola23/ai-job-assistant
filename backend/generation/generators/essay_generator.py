@@ -7,5 +7,5 @@ class EssayResponseGenerator(BaseGenerator):
         self.gpt_client = gpt_client
 
     def generate(self, data: dict) -> str:
-        prompt = get_essay_prompt(data)
+        prompt = get_essay_prompt(**data)
         return self.gpt_client.generate(prompt)

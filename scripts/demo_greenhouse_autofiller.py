@@ -11,7 +11,16 @@ def load_user_profile():
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
     
-application_data = load_user_profile()
+def test_job_dictionary():
+    return {
+            "job_title": "iOS Engineer",
+            "company_name": "SerpAPI Co",
+            "location": "Remote",
+            "url": "https://jobs.lever.co/ios-engineer",
+            "source": "Lever"
+        }
+    
+profile_data = load_user_profile()
 
 async def run():
     async with async_playwright() as p:
@@ -24,7 +33,7 @@ async def run():
 
         print("🤖 Running autofill (dry-run)...")
         autofiller = GreenhouseAutofiller()
-        result = await autofiller.autofill(page, application_data)
+        result = await autofiller.autofill(profile_data,"path/to/resume", "path/to/cover", test_job_dictionary(), page, dry_run=True)
         
         print("=== Result Log ===")
         for key, val in result.items():

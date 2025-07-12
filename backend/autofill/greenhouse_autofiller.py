@@ -1,10 +1,13 @@
 from backend.autofill.base_autofiller import BaseAutofiller
 from playwright.async_api import Page
-from typing import Dict, Any, Literal
+from typing import Dict, Any, Literal, Optional
 import logging
 from backend.autofill.xpath_utils import try_fill_by_id, get_labeled_field_xpath
 from pathlib import Path
 from backend.autofill.field_matcher_config import LABEL_KEY_MAP, VALUE_NORMALIZATION
+from backend.generation.client.openai_client import OpenAIClient
+from backend.generation.generators.essay_generator import EssayResponseGenerator
+from backend.resume.resume_parser import load_resume_text, parse_resume_text
 
 logger = logging.getLogger(__name__)
 
@@ -14,13 +17,18 @@ BASIC_INFO_FIELDS = ["name", "first_name", "last_name", "email", "phone", "locat
 VOLUNTARY_SELF_ID_FIELDS = ["gender", "hispanic_ethnicity", "veteran_status", "disability_status"]
 
 class GreenhouseAutofiller(BaseAutofiller):
-    async def fill_basic_info(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
+    def __init__(self, gpt_client: Optional[OpenAIClient] = None) -> None:
+        if not gpt_client:
+            raise AttributeError("No gpt client implemented.")
+        self.essay_generator = EssayResponseGenerator(gpt_client=gpt_client)
+            
+    async def fill_basic_info(self, page: Page, profile_data: Dict[str, Any], result_log: Dict[str, Any]):
         logger.info("🧾 Filling basic info...")
         
         for field in BASIC_INFO_FIELDS:
             if field == "name":
-                if "first_name" in data and "last_name" in data:
-                    value = f"{data['first_name']} {data['last_name']}"
+                if "first_name" in profile_data and "last_name" in profile_data:
+                    value = f"{profile_data['first_name']} {profile_data['last_name']}"
                     logger.info(f"🔍 Attempting to fill full name using: {value}")
 
                     for full_name_id in ["name", "full_name", "candidate_name"]:
@@ -38,7 +46,7 @@ class GreenhouseAutofiller(BaseAutofiller):
                 logger.warning("⚠️ Could not locate a suitable full name field. Skipping 'name'.")
                 # result_log["skipped_fields"].append("name")
             
-            value = data.get(field)
+            value = profile_data.get(field)
             if not value:
                 logger.warning(f"⚠️ No data found for {field}. Skipping.")
                 result_log["skipped_fields"].append(field)
@@ -71,9 +79,7 @@ class GreenhouseAutofiller(BaseAutofiller):
             # //*[@id="application-form"]/div[3]/div[3]/div/div/div/div/div
             
             
-    async def upload_file(self, page: Page, field_key: str, data: Dict[str, Any], xpath: str, result_log: Dict[str, Any]):
-        file_path = data.get(f"{field_key}_path")
-        
+    async def upload_file(self, page: Page, field_key: str, file_path, xpath: str, result_log: Dict[str, Any]):        
         if not file_path or not Path(file_path).exists():
             logger.warning(f"⚠️ No valid {field_key} path provided. Skipping {field_key} upload.")
             result_log["skipped_fields"].append(field_key)
@@ -88,7 +94,6 @@ class GreenhouseAutofiller(BaseAutofiller):
         except Exception as e1:
             logger.warning(f"❌ Direct {field_key} upload failed: {e1}")
             
-        
         try:
             # Fallback: Click the upload button
             upload_button_xpath = xpath
@@ -101,14 +106,14 @@ class GreenhouseAutofiller(BaseAutofiller):
             logger.error(f"❌ {field_key} upload failed entirely: {e2}")
             result_log["errors"].append({f"{field_key}": str(e2)})
             
-    async def upload_documents(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
-        await self.upload_file(page, "resume", data, RESUME_UPLOAD_BUTTON_XPATH, result_log)
-        await self.upload_file(page, "cover_letter", data, COVER_LETTER_UPLOAD_BUTTON_XPATH, result_log)    
+    async def upload_documents(self, page: Page, resume_path: str, cover_letter_path: str, result_log: Dict[str, Any]):
+        await self.upload_file(page, "resume", resume_path, RESUME_UPLOAD_BUTTON_XPATH, result_log)
+        await self.upload_file(page, "cover_letter", cover_letter_path, COVER_LETTER_UPLOAD_BUTTON_XPATH, result_log)    
     
-    async def fill_voluntary_self_id(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):        
+    async def fill_voluntary_self_id(self, page: Page, profile_data: Dict[str, Any], result_log: Dict[str, Any]):        
         for field in VOLUNTARY_SELF_ID_FIELDS:
             await page.wait_for_timeout(5000)
-            raw_value = data.get(field)
+            raw_value = profile_data.get(field)
             if not raw_value:
                 logger.warning(f"⚠️ No value provided for {field}. Skipping.")
                 result_log["skipped_fields"].append(field)
@@ -155,7 +160,7 @@ class GreenhouseAutofiller(BaseAutofiller):
             return "dropdown"
 
 
-    async def fill_custom_questions(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
+    async def fill_custom_questions(self, page: Page, profile_data: Dict[str, Any], job_data: Dict[str, Any], result_log: Dict[str, Any]):
         label_elements = await page.query_selector_all("xpath=//*[starts-with(@id, 'question_') and contains(@id, '-label')]")
 
         for label in label_elements:
@@ -179,18 +184,18 @@ class GreenhouseAutofiller(BaseAutofiller):
 
                 # Dispatch
                 if "why" in label_text.lower() or "describe" in label_text.lower() or tag_name == "textarea":
-                    await self.handle_essay_custom_question(page, label_text, field_id, result_log)
+                    await self.handle_essay_custom_question(page, label_text, field_id, job_data, result_log)
                 elif label_text.strip().lower() in LABEL_KEY_MAP:
-                    await self.handle_basic_custom_question(page, label_text, field_id, data, result_log)
+                    await self.handle_basic_custom_question(page, label_text, field_id, profile_data, result_log)
                 else:
-                    await self.handle_dropdown_custom_question(page, label_text, field_id, data, result_log)
+                    await self.handle_dropdown_custom_question(page, label_text, field_id, profile_data, result_log)
 
             except Exception as e:
                 logger.error(f"❌ Error classifying custom question '{label_text}': {e}")
                 result_log["errors"].append({label_text: str(e)})
 
 
-    async def click_submit_if_valid(self, page: Page, data: Dict[str, Any], result_log: Dict[str, Any]):
+    async def click_submit_if_valid(self, page: Page, result_log: Dict[str, Any]):
         pass
     
     async def handle_basic_custom_question(self, page: Page, label_text: str, field_id: str, data: Dict[str, Any], result_log: Dict[str, Any]):
@@ -224,5 +229,47 @@ class GreenhouseAutofiller(BaseAutofiller):
     async def handle_dropdown_custom_question(self, page: Page, label_text: str, field_id: str, data: Dict[str, Any], result_log: Dict[str, Any]):
         pass
 
-    async def handle_essay_custom_question(self, page: Page, label_text: str, field_id: str, result_log: Dict[str, Any]):
-        pass
+    async def handle_essay_custom_question(self, page: Page, label_text: str, field_id: str, job_data: Dict[str, Any], result_log: Dict[str, Any]):
+        try:
+            essay_data = self.get_esssay_data(job_data, label_text)
+            # 1. Generate response using GPT
+            response =  self.essay_generator.generate(essay_data)
+            # 2. Fill the field
+            selector = f'xpath=//*[@id="{field_id}"]'
+            await page.fill(selector, response)
+            await page.keyboard.press("Enter")
+
+            # 3. Log success
+            result_log["filled_fields"].append(label_text)
+            result_log["essays_filled"].append({
+                "field_id": field_id,
+                "essay_question": label_text,
+                "response": response
+            })
+
+            logger.info(f"✍️ Essay filled for {label_text[:40]}...")
+        except Exception as e:
+            logger.error(f"❌ Error filling essay question '{label_text}': {e}")
+            result_log["errors"].append({label_text: str(e)})
+            
+            
+    def get_esssay_data(self, job_data: Dict[str, Any], label_text: str) -> Dict[str, Any]:
+        resume_path = job_data.get("resume_path", "tests/data/yemi_resume.pdf")
+        resume_text = load_resume_text(resume_path)
+        resume_data = parse_resume_text(resume_text)
+
+        summary = resume_data.get("raw_text", "")[:400]  # truncate if needed
+        skills = ", ".join(resume_data.get("skills", []))
+        experience = resume_data.get("experience", [])
+        top_bullets = [b for e in experience for b in e.get("bullets", [])][:2]
+        exp_str = "\n".join(f"- {b}" for b in top_bullets)
+        
+        return {
+            "company": job_data.get("company_name", "this company"),
+            "job_title": job_data.get("job_title", "this role"),
+            "question": label_text,
+            "job_description": job_data.get("description"),
+            "summary": summary,
+            "skills": skills,
+            "experience": exp_str
+         }

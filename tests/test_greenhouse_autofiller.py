@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, call, patch
+from unittest.mock import AsyncMock, call, patch, MagicMock
 from backend.autofill.greenhouse_autofiller import GreenhouseAutofiller
 from backend.utils.constants import EMPTY_RESULT_DICT
 import backend.autofill.field_matcher_config as matcher_config
@@ -44,14 +44,9 @@ async def test_upload_documents_successfully_uploads_resume(mock_path_exists):
      # Arrange
     mock_page = AsyncMock()
     autofiller = GreenhouseAutofiller()
-    
-    data = {
-        "resume_path": "/path/to/resume"
-    }
-    
     result= EMPTY_RESULT_DICT
         
-    await autofiller.upload_documents(mock_page, data, result)
+    await autofiller.upload_documents(mock_page, "/path/to/resume", "", result)
     
     mock_page.set_input_files.assert_called_with('input#resume', "/path/to/resume")    
     assert result["uploaded_files"]["resume"] == "/path/to/resume"
@@ -63,15 +58,10 @@ async def test_upload_documents_successfully_uploads_cover_letter(mock_exists):
     # Arrange
     mock_page = AsyncMock()
     autofiller = GreenhouseAutofiller()
-
-    data = {
-        "cover_letter_path": "/path/to/cover_letter"
-    }
-    
     result= EMPTY_RESULT_DICT
 
     # Act
-    await autofiller.upload_documents(mock_page, data, result)
+    await autofiller.upload_documents(mock_page, "", "/path/to/cover_letter", result)
 
     # Assert
     mock_page.set_input_files.assert_called_with('input#cover_letter', "/path/to/cover_letter")
@@ -83,6 +73,7 @@ async def test_upload_documents_fallback_upload_cover_letter(mock_exists):
     # Arrange
     mock_page = AsyncMock()
     autofiller = GreenhouseAutofiller()
+    result= EMPTY_RESULT_DICT
 
     # Simulate direct upload failure on first call, success on fallback
     mock_page.set_input_files = AsyncMock(side_effect=[
@@ -91,14 +82,8 @@ async def test_upload_documents_fallback_upload_cover_letter(mock_exists):
     ])
     mock_page.click = AsyncMock()
 
-    data = {
-        "cover_letter_path": "/path/to/cover_letter"
-    }
-
-    result= EMPTY_RESULT_DICT
-
     # Act
-    await autofiller.upload_documents(mock_page, data, result)
+    await autofiller.upload_documents(mock_page, "", "/path/to/cover_letter", result)
 
     # Assert
     mock_page.click.assert_called_once()
@@ -122,15 +107,10 @@ async def test_upload_documents_fallback_upload_resume(mock_exists):
         None  # for fallback input[type="file"]
     ])
     mock_page.click = AsyncMock()
-
-    data = {
-        "resume_path": "/path/to/resume"
-    }
-
     result = EMPTY_RESULT_DICT
 
     # Act
-    await autofiller.upload_documents(mock_page, data, result)
+    await autofiller.upload_documents(mock_page, "/path/to/resume", "", result)
 
     # Assert
     mock_page.click.assert_called_once()
@@ -175,14 +155,7 @@ async def test_fill_voluntary_self_id_uses_primary_path_for_normalized_value(moc
         "veteran_status": "Prefer not to say"
     }
 
-    result = {
-        "filled_fields": [],
-        "skipped_fields": [],
-        "uploaded_files": {},
-        "errors": [],
-        "clicked_submit": False,
-        "confirmation_found": False
-    }
+    result = EMPTY_RESULT_DICT
 
     # Act
     await autofiller.fill_voluntary_self_id(mock_page, data, result)
@@ -215,19 +188,49 @@ async def test_fill_custom_questions_dispatches_basic_question(mock_try_fill):
         "linkedin": "https://linkedin.com/in/test"
     }
 
-    result = {
-        "filled_fields": [],
-        "skipped_fields": [],
-        "uploaded_files": {},
-        "errors": [],
-        "clicked_submit": False,
-        "confirmation_found": False
-    }
+    result = EMPTY_RESULT_DICT.copy()
 
     # Act
     with patch.dict(matcher_config.LABEL_KEY_MAP, {"linkedin_profile": "linkedin"}):
-        await autofiller.fill_custom_questions(mock_page, data, result)
+        await autofiller.fill_custom_questions(mock_page, data, {}, result)
 
     # Assert
     mock_try_fill.assert_called_with(mock_page, "question_123", "https://linkedin.com/in/test", result)
     assert "linkedin" in result["filled_fields"]
+    
+@pytest.mark.asyncio
+async def test_handle_essay_custom_question_fills_textarea():
+    # Arrange
+    mock_gpt = MagicMock()
+    mock_gpt.generate.return_value = "I'm excited to join because..."
+
+    autofiller = GreenhouseAutofiller(gpt_client=mock_gpt)
+    
+    # mock page + input_element behavior
+    mock_page = AsyncMock()
+    mock_page.fill = AsyncMock()
+    mock_page.keyboard.press = AsyncMock()
+    
+    result_log = EMPTY_RESULT_DICT
+    
+    label_text = "Why do you want to work here?"
+    field_id = "question_123"
+    
+    job_data = {
+        "job_descriptionn": "Test job description",
+        "company": "Flock Safety"
+    }
+
+    # Act
+    await autofiller.handle_essay_custom_question(mock_page, label_text, field_id, job_data, result_log)
+    
+    # Assert
+    mock_page.fill.assert_awaited_once_with(f'xpath=//*[@id="{field_id}"]', "I'm excited to join because...")
+    mock_page.keyboard.press.assert_awaited_once_with("Enter")
+
+    assert label_text in result_log["filled_fields"]
+    assert {
+        "field_id": field_id,
+        "essay_question": label_text,
+        "response": "I'm excited to join because..."
+    } in result_log["essays_filled"]
