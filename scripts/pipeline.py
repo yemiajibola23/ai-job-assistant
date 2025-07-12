@@ -8,7 +8,7 @@ from backend.utils.constants import DEFAULT_SCORE_THRESHOLD
 
 logger = get_logger(__name__)
 
-def run_full_pipeline(resume_path: str, user_query: Optional[str] = None, min_score: float = DEFAULT_SCORE_THRESHOLD) -> dict:
+async def run_full_pipeline(resume_path: str, user_query: Optional[str] = None, min_score: float = DEFAULT_SCORE_THRESHOLD) -> dict:
     conn = get_connection()
     
     resume_text = load_resume_text(resume_path)
@@ -23,7 +23,7 @@ def run_full_pipeline(resume_path: str, user_query: Optional[str] = None, min_sc
         score = job.get("score", 0.0)
         if score >= min_score:
             try:
-                apply_to_job(job, resume_data, conn)
+                await apply_to_job(job, resume_data, conn)
                 applied += 1
             except Exception as e:
                 logger.error(f"❌ Failed to apply to job {job.get('id')} – {job.get('title')}: {e}")

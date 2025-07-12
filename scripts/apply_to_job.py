@@ -2,10 +2,9 @@
 from backend.generation.export.tailored_resume_exporter import generate_and_render_tailored_resume
 from backend.generation.export.tailored_cover_letter_exporter import generate_and_render_tailored_cover_letter
 from backend.db.application_dao import add_application
-from backend.db.connection import get_connection
 from backend.generation.generators.cover_letter_generator import CoverLetterGenerator
 from backend.generation.generators.resume_generator import ResumeGenerator
-from backend.autofill.playwright_autofiller import PlaywrightAutofiller
+from backend.autofill.greenhouse_autofiller import GreenhouseAutofiller
 from backend.generation.client.openai_client import client
 from backend.generation.templates.jinja_env import get_jinja_env
 import json
@@ -19,13 +18,12 @@ def load_user_profile():
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def apply_to_job(job: dict, resume_data: dict, conn: sqlite3.Connection):
+async def apply_to_job(job: dict, resume_data: dict, conn: sqlite3.Connection):
     job_id = job.get("id")
     if not job_id:
         raise ValueError("Missing job ID")
     job_url = job["url"]
-    job_description = job["description"]
-    
+    job_description = job.get("description", "")
     
     # Step 1: Generate assets
     jinja_env = get_jinja_env()
@@ -38,17 +36,9 @@ def apply_to_job(job: dict, resume_data: dict, conn: sqlite3.Connection):
     
     # Step 2: Run the autofiller
     profile_data = load_user_profile()
-    application_data = {
-        **profile_data,
-        "first_name": profile_data.get("name", "").split()[0],
-        "last_name": profile_data.get("name", "").split()[-1],
-        "email": profile_data.get("email"),
-        "phone": profile_data.get("phone"),
-        "resume": str(resume_path),
-        "cover_letter": str(cover_letter_path)
-    }
-    autofiller = PlaywrightAutofiller(job_url)
-    autofill_result = autofiller.fill_form(application_data)
+     
+    autofiller = GreenhouseAutofiller()
+    autofill_result = await autofiller.autofill(profile_data=profile_data, resume_path=str(resume_path), cover_letter_path=str(cover_letter_path), job_data=job)
     
     app_dict = {
         "job_id": job_id,
@@ -61,7 +51,6 @@ def apply_to_job(job: dict, resume_data: dict, conn: sqlite3.Connection):
     }
     
     add_application(conn, app_dict)
-    
     
     print(f"✅ Applied to {job['title']} at {job['company']}")
     print(f"📝 Resume: {resume_path}")
