@@ -4,12 +4,12 @@ from playwright.async_api import Page, async_playwright
 from backend.utils.logging import get_logger
 from backend.utils.constants import EMPTY_RESULT_DICT
 from backend.utils.screenshot import take_screenshot
-from backend.generation.client.openai_client import OpenAIClient
+from backend.generation.generators.essay_generator import EssayResponseGenerator
 
 logger = get_logger(__name__)
 class BaseAutofiller(ABC):
-    def __init__(self, gpt_client: Optional[OpenAIClient] = None) -> None:
-       self.gpt_client = gpt_client
+    def __init__(self, essay_generator: EssayResponseGenerator = EssayResponseGenerator()) -> None:
+       self.essay_generator = essay_generator
     
     @abstractmethod
     async def fill_basic_info(self, page: Page, profile_data: Dict[str, Any], result_log: Dict[str, Any]):
@@ -33,7 +33,6 @@ class BaseAutofiller(ABC):
     async def _autofill_page(self, page: Page, profile_data: Dict[str, Any], resume_path: str, cover_letter_path: str, job_data: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
         result = EMPTY_RESULT_DICT
         try:
-            await page.goto(job_data.get("url", ""))
             logger.info("🧾 Filling basic info...")
             await self.fill_basic_info(page, profile_data, result)
 
@@ -60,12 +59,27 @@ class BaseAutofiller(ABC):
         return result
     
     async def autofill(self, profile_data: Dict[str, Any], resume_path: str, cover_letter_path: str, job_data: Dict[str, Any], page: Optional[Page]=None, dry_run=True) -> Dict[str, Any]:
+        result = {}
         if page is None: 
             async with async_playwright() as p:
-                browser = await p.chromium.launch()
+                browser = await p.chromium.launch(headless=False, slow_mo=100)
                 context = await browser.new_context()
                 page = await context.new_page()
+            
+                url = job_data.get("job_url")
+                if not url:
+                    raise ValueError("Missing job_data['job_url']. Cannot launch form.")
                 
-        return await self._autofill_page(page, profile_data, resume_path, cover_letter_path, job_data, dry_run)    
-        
-        
+                print(f"🌐 Navigating to: {url}")
+                await page.goto(url)
+                await page.wait_for_selector('input[type="file"]', state="visible")
+                
+                result = await self._autofill_page(page, profile_data, resume_path, cover_letter_path, job_data, dry_run)    
+
+                print("=== Result Log ===")
+                for key, val in result.items():
+                    print(f"{key}: {val}")
+
+                input("✅ Autofill complete. Press Enter to close browser...")
+                await browser.close()
+        return result

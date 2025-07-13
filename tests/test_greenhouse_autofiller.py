@@ -206,7 +206,7 @@ async def test_handle_essay_custom_question_fills_textarea():
     answer = "I'm excited to join because it's a cool place to work."
     mock_gpt.generate.return_value = answer
 
-    autofiller = GreenhouseAutofiller(gpt_client=mock_gpt)
+    autofiller = GreenhouseAutofiller()
     
     # mock page + input_element behavior
     mock_page = AsyncMock()
@@ -241,10 +241,11 @@ async def test_handle_essay_custom_question_fills_textarea():
 @pytest.mark.asyncio
 async def test_handle_essay_custom_question_handles_gpt_failure():
     # Arrange
-    mock_gpt = MagicMock()
-    mock_gpt.generate.side_effect = RuntimeError("Simulated GPT failure")
+    mock_esssay_generator = MagicMock()
+    mock_esssay_generator.generate.side_effect = RuntimeError("Simulated GPT failure")
+    
 
-    autofiller = GreenhouseAutofiller(gpt_client=mock_gpt)
+    autofiller = GreenhouseAutofiller(essay_generator=mock_esssay_generator)
     mock_page = AsyncMock()
     mock_page.fill = AsyncMock()
     mock_page.keyboard.press = AsyncMock()
@@ -278,10 +279,10 @@ async def test_handle_essay_custom_question_handles_gpt_failure():
 @pytest.mark.asyncio
 async def test_handle_essay_custom_question_handles_short_or_empty_response():
     # Arrange
-    mock_gpt = MagicMock()
-    mock_gpt.generate.return_value ="idk"
+    mock_essay_generator = MagicMock()
+    mock_essay_generator.generate.return_value ="idk"
 
-    autofiller = GreenhouseAutofiller(gpt_client=mock_gpt)
+    autofiller = GreenhouseAutofiller(essay_generator=mock_essay_generator)
     mock_page = AsyncMock()
     mock_page.fill = AsyncMock()
     mock_page.keyboard.press = AsyncMock()

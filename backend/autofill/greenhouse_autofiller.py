@@ -17,10 +17,6 @@ BASIC_INFO_FIELDS = ["name", "first_name", "last_name", "email", "phone"]
 VOLUNTARY_SELF_ID_FIELDS = ["gender", "hispanic_ethnicity", "veteran_status", "disability_status"]
 
 class GreenhouseAutofiller(BaseAutofiller):
-    def __init__(self, gpt_client: Optional[OpenAIClient] = None) -> None:
-        if gpt_client:
-            self.essay_generator = EssayResponseGenerator(gpt_client=gpt_client)
-            
     async def fill_basic_info(self, page: Page, profile_data: Dict[str, Any], result_log: Dict[str, Any]):
         logger.info("🧾 Filling basic info...")
         
@@ -259,7 +255,6 @@ class GreenhouseAutofiller(BaseAutofiller):
                 "error": str(e),
                 "source": "essay_gpt"
             })
-            
             
     def get_esssay_data(self, job_data: Dict[str, Any], label_text: str) -> Dict[str, Any]:
         resume_path = job_data.get("resume_path", "tests/data/yemi_resume.pdf")
