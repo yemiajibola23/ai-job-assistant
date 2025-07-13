@@ -22,31 +22,10 @@ class GreenhouseAutofiller(BaseAutofiller):
         
         for field in BASIC_INFO_FIELDS:
             if field == "name":
-                if "first_name" in profile_data and "last_name" in profile_data:
-                    value = f"{profile_data['first_name']} {profile_data['last_name']}"
-                    logger.info(f"🔍 Attempting to fill full name using: {value}")
-
-                    for full_name_id in ["name", "full_name", "candidate_name"]:
-                        selector = f'xpath=//*[@id="{full_name_id}"]'
-                        full_name_input = await page.query_selector(selector)
-                        if full_name_input:
-                            await full_name_input.fill(value)
-                            logger.info(f"✅ Filled full name field '{full_name_id}' with value: {value}")
-                            result_log["filled_fields"].extend(["first_name", "last_name"])
-                            break
-                        else:
-                            logger.debug(f"🕳️ Could not fill '{full_name_id}' as full name field.")
-                continue  # Skip to next field after attempting full name
-            else:
-                logger.warning("⚠️ Could not locate a suitable full name field. Skipping 'name'.")
-                # result_log["skipped_fields"].append("name")
+                await self.fill_name_fields(page, profile_data, result_log)
+                continue  # Skip to next field after handling 'name'
             
-            value = profile_data.get(field)
-            if not value:
-                logger.warning(f"⚠️ No data found for {field}. Skipping.")
-                result_log["skipped_fields"].append(field)
-                continue
-
+            value = profile_data.get(field, "")
             await try_fill_by_id(page, field, value, result_log)
         
              #//*[@id="first_name-label"]
@@ -73,7 +52,43 @@ class GreenhouseAutofiller(BaseAutofiller):
             # //*[@id="gender-label"]
             # //*[@id="application-form"]/div[3]/div[3]/div/div/div/div/div
             
-            
+    async def fill_name_fields(self, page: Page, profile_data: Dict[str, Any], result_log: Dict[str, Any]):
+         # ✅ Step 1: Check if both first_name and last_name exist in profile_data
+                if "first_name" in profile_data and "last_name" in profile_data:
+                    # Try to fill separate fields
+                    for key in ["first_name", "last_name"]:
+                        value = profile_data[key]
+                        selector = f'xpath=//*[@id="{key}"]'
+                        input_el = await page.query_selector(selector)
+                        if input_el:
+                            await input_el.fill(value)
+                            logger.info(f"✅ Filled {key} field with value: {value}")
+                            result_log["filled_fields"].append(key)
+                        else:
+                            logger.warning(f"⚠️ Could not find input field for '{key}'")
+                            result_log["skipped_fields"].append(key)
+                else:
+                    # 👥 Step 2: Combine first + last and fill single full name field
+                    first = profile_data.get("first_name", "")
+                    last = profile_data.get("last_name", "")
+                    full_name = f"{first} {last}".strip()
+
+                    if full_name:
+                        for full_name_id in ["full_name", "name", "candidate_name"]:
+                            selector = f'xpath=//*[@id="{full_name_id}"]'
+                            input_el = await page.query_selector(selector)
+                            if input_el:
+                                await input_el.fill(full_name)
+                                logger.info(f"✅ Filled full name field '{full_name_id}' with value: {full_name}")
+                                result_log["filled_fields"].append("name")
+                                break
+                            else:
+                                logger.warning("⚠️ Could not locate any full name field (full_name, name, candidate_name)")
+                                result_log["skipped_fields"].append("name")
+                    else:
+                        logger.warning("⚠️ No full name data available to fill.")
+                        result_log["skipped_fields"].append("name")
+        
     async def upload_file(self, page: Page, field_key: str, file_path, xpath: str, result_log: Dict[str, Any]):        
         if not file_path or not Path(file_path).exists():
             logger.warning(f"⚠️ No valid {field_key} path provided. Skipping {field_key} upload.")

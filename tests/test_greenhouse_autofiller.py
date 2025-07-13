@@ -202,11 +202,11 @@ async def test_fill_custom_questions_dispatches_basic_question(mock_try_fill):
 @pytest.mark.asyncio
 async def test_handle_essay_custom_question_fills_textarea():
     # Arrange
-    mock_gpt = MagicMock()
+    mock_essay_generator = MagicMock()
     answer = "I'm excited to join because it's a cool place to work."
-    mock_gpt.generate.return_value = answer
+    mock_essay_generator.generate.return_value = answer
 
-    autofiller = GreenhouseAutofiller()
+    autofiller = GreenhouseAutofiller(essay_generator=mock_essay_generator)
     
     # mock page + input_element behavior
     mock_page = AsyncMock()
@@ -312,3 +312,47 @@ async def test_handle_essay_custom_question_handles_short_or_empty_response():
         "error": "GPT returned empty or insufficient response",
         "source": "essay_gpt"
     } in result_log["errors"]
+
+
+import pytest
+from unittest.mock import AsyncMock, MagicMock
+from backend.autofill.base_autofiller import BaseAutofiller
+
+@pytest.mark.asyncio
+async def test_fill_name_fields_separate_fields():
+    # Arrange
+    page = AsyncMock()
+    autofiller = GreenhouseAutofiller()
+
+    # Simulate two input elements found via XPath
+    mock_input_first = AsyncMock()
+    mock_input_last = AsyncMock()
+
+    # Return the right mock for each query_selector call
+    def query_selector_side_effect(selector):
+        if 'first_name' in selector:
+            return mock_input_first
+        elif 'last_name' in selector:
+            return mock_input_last
+        return None
+
+    page.query_selector.side_effect = query_selector_side_effect
+
+    profile_data = {
+        "first_name": "Yemi",
+        "last_name": "Ajibola"
+    }
+    result_log = {
+        "filled_fields": [],
+        "skipped_fields": [],
+        "errors": []
+    }
+
+    # Act
+    await autofiller.fill_name_fields(page, profile_data, result_log)
+
+    # Assert
+    mock_input_first.fill.assert_called_once_with("Yemi")
+    mock_input_last.fill.assert_called_once_with("Ajibola")
+    assert "first_name" in result_log["filled_fields"]
+    assert "last_name" in result_log["filled_fields"]
