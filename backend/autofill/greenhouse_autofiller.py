@@ -15,6 +15,7 @@ RESUME_UPLOAD_BUTTON_XPATH = '//*[@id="application-form"]/div[1]/div[5]/div/div[
 COVER_LETTER_UPLOAD_BUTTON_XPATH = '//*[@id="application-form"]/div[1]/div[6]/div/div[2]/div/div[1]/div/button'
 BASIC_INFO_FIELDS = ["name", "first_name", "last_name", "email", "phone"]
 VOLUNTARY_SELF_ID_FIELDS = ["gender", "hispanic_ethnicity", "veteran_status", "disability_status"]
+ESSAY_KEYWORDS = ["why", "describe", "tell", "biggest", "strength", "challenge", "experience", "words", "example"]
 
 class GreenhouseAutofiller(BaseAutofiller):
     async def fill_basic_info(self, page: Page, profile_data: Dict[str, Any], result_log: Dict[str, Any]):
@@ -191,9 +192,14 @@ class GreenhouseAutofiller(BaseAutofiller):
                     continue
                 
                 tag_name = await input_element.evaluate("el => el.tagName.toLowerCase()")
+                attrs = {
+                    "maxlength": await input_element.get_attribute("maxlength"),
+                    "rows": await input_element.get_attribute("rows"),
+                    "cols": await input_element.get_attribute("cols"),
+                    }
 
                 # Dispatch
-                if "why" in label_text.lower() or "describe" in label_text.lower() or tag_name == "textarea":
+                if self.is_essay_question(label_text, tag_name, attrs):
                     await self.handle_essay_custom_question(page, label_text, field_id, job_data, result_log)
                 elif label_text.strip().lower() in LABEL_KEY_MAP:
                     await self.handle_basic_custom_question(page, label_text, field_id, profile_data, result_log)
@@ -204,9 +210,6 @@ class GreenhouseAutofiller(BaseAutofiller):
                 logger.error(f"❌ Error classifying custom question '{label_text}': {e}")
                 result_log["errors"].append({label_text: str(e)})
 
-
-    async def click_submit_if_valid(self, page: Page, result_log: Dict[str, Any]):
-        pass
     
     async def handle_basic_custom_question(self, page: Page, label_text: str, field_id: str, data: Dict[str, Any], result_log: Dict[str, Any]):
         key = LABEL_KEY_MAP.get(label_text.strip().lower())
@@ -238,10 +241,46 @@ class GreenhouseAutofiller(BaseAutofiller):
 
     async def handle_dropdown_custom_question(self, page: Page, label_text: str, field_id: str, data: Dict[str, Any], result_log: Dict[str, Any]):
         pass
+    
+
+    def is_essay_question(self, label_text: str, tag: str, attrs: Dict[str, Any]) -> bool:
+        """
+        Determines whether a field is an essay question based on label and element attributes.
+        """
+        text = label_text.lower()
+
+        # 🔍 Step 1: Check label keywords
+        if any(word in text for word in ESSAY_KEYWORDS):
+            return True
+
+        # 🧠 Step 2: Check tag and attrs
+        if tag == "textarea":
+            return True
+
+        # Get attributes safely
+        maxlength = int(attrs.get("maxlength", 0) or 0)
+        rows = int(attrs.get("rows", 0) or 0)
+        cols = int(attrs.get("cols", 0) or 0)
+
+        # 🧪 Heuristic-based
+        if maxlength >= 200:
+            return True
+        if rows >= 3:
+            return True
+        if cols >= 40:
+            return True
+
+        return False
 
     async def handle_essay_custom_question(self, page: Page, label_text: str, field_id: str, job_data: Dict[str, Any], result_log: Dict[str, Any]):
         try:
-            essay_data = self.get_esssay_data(job_data, label_text)
+            selector = f'xpath=//*[@id="{field_id}"]'
+            input_el = await page.query_selector(selector)
+            maxlength_raw = await input_el.get_attribute("maxlength") if input_el else None
+            maxlength = int(maxlength_raw) if maxlength_raw and maxlength_raw.isdigit() else None
+
+            
+            essay_data = self.get_esssay_data(job_data, label_text, maxlength)
             # 1. Generate response using GPT
             response =  self.essay_generator.generate(essay_data)
             if not response or len(response.strip()) < 10:
@@ -271,7 +310,7 @@ class GreenhouseAutofiller(BaseAutofiller):
                 "source": "essay_gpt"
             })
             
-    def get_esssay_data(self, job_data: Dict[str, Any], label_text: str) -> Dict[str, Any]:
+    def get_esssay_data(self, job_data: Dict[str, Any], label_text: str, max_length: Optional[int]) -> Dict[str, Any]:
         resume_path = job_data.get("resume_path", "tests/data/yemi_resume.pdf")
         resume_text = load_resume_text(resume_path)
         resume_data = parse_resume_text(resume_text)
@@ -289,5 +328,9 @@ class GreenhouseAutofiller(BaseAutofiller):
             "job_description": job_data.get("description"),
             "summary": summary,
             "skills": skills,
-            "experience": exp_str
+            "experience": exp_str,
+            "max_length": max_length
          }
+
+    async def click_submit_if_valid(self, page: Page, result_log: Dict[str, Any]):
+        pass

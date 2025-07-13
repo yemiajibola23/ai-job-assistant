@@ -314,10 +314,6 @@ async def test_handle_essay_custom_question_handles_short_or_empty_response():
     } in result_log["errors"]
 
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock
-from backend.autofill.base_autofiller import BaseAutofiller
-
 @pytest.mark.asyncio
 async def test_fill_name_fields_separate_fields():
     # Arrange
@@ -356,3 +352,45 @@ async def test_fill_name_fields_separate_fields():
     mock_input_last.fill.assert_called_once_with("Ajibola")
     assert "first_name" in result_log["filled_fields"]
     assert "last_name" in result_log["filled_fields"]
+
+
+@pytest.mark.asyncio
+async def test_essay_question_detection_with_maxlength():
+    # Arrange
+    page = AsyncMock()
+    autofiller = GreenhouseAutofiller()
+
+    # Mock label element
+    label_el = AsyncMock()
+    label_el.get_attribute.return_value = "question_123-label"
+    label_el.inner_text.return_value = "Tell us about your biggest challenge"
+
+    # Mock input field with maxlength
+    input_el = AsyncMock()
+    input_el.evaluate.return_value = "input"  # tag
+    input_el.get_attribute = AsyncMock(side_effect=lambda attr: "300" if attr == "maxlength" else None)
+
+    # Mock DOM querying
+    page.query_selector_all.return_value = [label_el]
+    page.query_selector.return_value = input_el
+
+    profile_data = {}
+    job_data = {
+        "company_name": "Dream Co",
+        "job_title": "Engineer",
+        "description": "Exciting job",
+        "resume_path": "tests/data/yemi_resume.pdf"
+    }
+    result_log = {"filled_fields": [], "skipped_fields": [], "errors": [], "essays_filled": []}
+
+    # Mock GPT essay generation
+    with patch.object(autofiller.essay_generator, "generate", return_value="This is my essay.") as mock_generate:
+        await autofiller.fill_custom_questions(page, profile_data, job_data, result_log)
+
+    # Assert
+    mock_generate.assert_called()
+    arg = mock_generate.call_args.args[0]  # This is the essay_data dict
+    assert "challenge" in arg["question"].lower()
+    assert arg["max_length"] == 300
+    assert "question_123" not in result_log["skipped_fields"]
+    assert any("challenge" in e["essay_question"].lower() for e in result_log["essays_filled"])
