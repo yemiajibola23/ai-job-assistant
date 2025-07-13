@@ -292,7 +292,6 @@ class GreenhouseAutofiller(BaseAutofiller):
             await page.keyboard.press("Enter")
 
             # 3. Log success
-            result_log["filled_fields"].append(label_text)
             result_log["essays_filled"].append({
                 "field_id": field_id,
                 "essay_question": label_text,
