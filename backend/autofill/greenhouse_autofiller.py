@@ -6,8 +6,8 @@ from backend.autofill.xpath_utils import try_fill_by_id, get_labeled_field_xpath
 from pathlib import Path
 from backend.autofill.field_matcher_config import LABEL_KEY_MAP, VALUE_NORMALIZATION
 from backend.generation.client.openai_client import OpenAIClient
-from backend.generation.generators.essay_generator import EssayResponseGenerator
 from backend.resume.resume_parser import load_resume_text, parse_resume_text
+from backend.autofill.field_matcher import normalize_select_value
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,10 @@ class GreenhouseAutofiller(BaseAutofiller):
                 continue  # Skip to next field after handling 'name'
             
             value = profile_data.get(field, "")
-            await try_fill_by_id(page, field, value, result_log)
+            norm_value = normalize_select_value(field_key=field, raw_value=value)
+            logger.debug(f"🔁 Normalizing {field}: '{value}' → '{norm_value}'")
+            
+            await try_fill_by_id(page, field, norm_value, result_log)
         
              #//*[@id="first_name-label"]
              #//*[@id="first_name"]
@@ -136,9 +139,16 @@ class GreenhouseAutofiller(BaseAutofiller):
                 result_log["skipped_fields"].append(field)
                 continue
 
-            success = await try_fill_by_id(page, field, value, result_log)
-            if success:
-                continue  # ✅ done
+            # 🧠 Try normalized fuzzy select match
+            best_option = await self.get_closest_select_option(page, field, value)
+            if best_option:
+                logger.info(f"🎯 {field}: '{value}' → '{best_option}'")
+                success = await try_fill_by_id(page, field, best_option, result_log)
+                if success:
+                    return
+            else:
+                logger.warning(f"⚠️ No close match found in dropdown for {field}: '{value}'")
+                result_log["skipped_fields"].append(field)
             
             label_text = next(
                 (label for label, canonical in LABEL_KEY_MAP.items() if canonical == field),
